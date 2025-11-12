@@ -2,7 +2,7 @@
 
 # --- List of all tasks to run by default ---
 # This variable is used by the main script when no numbers are specified.
-export ALL_TASKS="0-7"
+export ALL_TASKS="0-2"
 
 # other variables
 export DATADIR=/data/SimulatedDatasets/Zymo
@@ -18,57 +18,34 @@ f0() {
 }
 
 f1() {
-    measure $COLLINEARITY \
-    --idx $TMPDIR/Zymo \
-    --qry $DATADIR/reads/Reads01_180.fasta \
-    --out $OUTDIR/zymo \
-    --bw 16
+    echo "Running with different bandwidths without compression.."
+    bw_values=(16 32 64 128 256 512 1024)
+
+    for bw in "${bw_values[@]}"; do
+        measure $COLLINEARITY \
+        --ref $DATADIR/Refs1.fasta \
+        --idx $TMPDIR/Zymo --bw ${bw};
+
+        measure $COLLINEARITY \
+        --idx $TMPDIR/Zymo \
+        --qry $DATADIR/reads/Reads0_180.fasta $DATADIR/reads/Reads1_180.fasta \
+        --out $OUTDIR/zymo-cl-${bw}.tsv;
+    done
 }
 
 f2() {
-    measure $COLLINEARITY \
-    --idx $TMPDIR/Zymo \
-    --qry $DATADIR/reads/Reads01_180.fasta \
-    --out $OUTDIR/zymo \
-    --bw 32
-}
+    echo "Running with different bandwidths with compression .."
+    bw_values=(16 32 64 128 256 512 1024)
 
-f3() {
-    measure $COLLINEARITY \
-    --idx $TMPDIR/Zymo \
-    --qry $DATADIR/reads/Reads01_180.fasta \
-    --out $OUTDIR/zymo \
-    --bw 64
-}
+    for bw in "${bw_values[@]}"; do
+        measure $COLLINEARITY \
+        --ref $DATADIR/Refs1.fasta \
+        --idx $TMPDIR/Zymo --bw ${bw} \
+        --compressed;
 
-f4() {
-    measure $COLLINEARITY \
-    --idx $TMPDIR/Zymo \
-    --qry $DATADIR/reads/Reads01_180.fasta \
-    --out $OUTDIR/zymo \
-    --bw 128
-}
-
-f5() {
-    measure $COLLINEARITY \
-    --idx $TMPDIR/Zymo \
-    --qry $DATADIR/reads/Reads01_180.fasta \
-    --out $OUTDIR/zymo \
-    --bw 256
-}
-
-f6() {
-    measure $COLLINEARITY \
-    --idx $TMPDIR/Zymo \
-    --qry $DATADIR/reads/Reads01_180.fasta \
-    --out $OUTDIR/zymo \
-    --bw 512
-}
-
-f7() {
-    measure $COLLINEARITY \
-    --idx $TMPDIR/Zymo \
-    --qry $DATADIR/reads/Reads01_180.fasta \
-    --out $OUTDIR/zymo \
-    --bw 1024
+        measure $COLLINEARITY \
+        --idx $TMPDIR/Zymo \
+        --qry $DATADIR/reads/Reads0_180.fasta $DATADIR/reads/Reads1_180.fasta \
+        --out $OUTDIR/zymo-cl-${bw}.tsv;
+    done
 }

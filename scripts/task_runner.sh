@@ -39,8 +39,10 @@ export SCRIPTDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && 
 export EXPDIR=`dirname $SCRIPTDIR`
 export CODEDIR=$EXPDIR/code
 export LOGDIR=$EXPDIR/logs
-export OUTDIR=$EXPDIR/results
+export OUTDIR=$EXPDIR/out
 export TMPDIR=$EXPDIR/tmp
+
+export PATH=$EXPDIR/code/minimap2/:$PATH
 export PATH=$EXPDIR/code/collinearity/build/:$PATH
 export PATH=$EXPDIR/code/metagraph/metagraph/build/:$PATH
 export SPUMONI_BUILD_DIR=$EXPDIR/code/spumoni/build/
@@ -92,7 +94,7 @@ if [ ! -f "$TASKS_FILE" ]; then
     exit 1
 fi
 
-export LOGFILE=$LOGDIR/$TASKS_NAME_$TIMESTAMP.log
+export LOGFILE=$LOGDIR/${TASKS_NAME}_$TIMESTAMP.log
 
 # --- Task Execution Function ---
 # This function dynamically calls the appropriate task function based on the number.
