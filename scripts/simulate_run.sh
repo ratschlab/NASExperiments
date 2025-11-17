@@ -6,10 +6,10 @@ set -euo pipefail
 # the following lines can be files or directories
 INPUT_SIGNAL=(
     "/data/SimulatedDatasets/Zymo/signals/Sigs0_450.blow5"
-    "/data/SimulatedDatasets/Zymo/signals/Sigs0_450.blow5"
+    "/data/SimulatedDatasets/Zymo/signals/Sigs1_450.blow5"
 )
 # the folloing is the path to Readfish's config.
-CONFIG_TOML=/scratch/NASExperiments/configs/rf_mm_zymo.toml
+CONFIG_TOML=/scratch/NASExperiments/configs/rf_sp_zymo.toml
 
 # --- Some globals ---
 SCRIPTDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )

@@ -5,7 +5,7 @@ address = "ipc:///tmp/.guppy/5555"
 [mapper_settings.mappy_rs]
 # Update the following path
 fn_idx_in = "/scratch/NASExperiments/tmp/zymo.mmi" 
-n_threads = 4
+n_threads = 16
 best_n = 1
 
 [[regions]]
