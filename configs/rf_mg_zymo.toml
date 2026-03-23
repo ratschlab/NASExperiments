@@ -1,10 +1,14 @@
 [caller_settings.dorado]
-config = "dna_r9.4.1_450bps_fast"
+config = "dna_r9.4.1_450bps_fast" # <-- update this
 address = "ipc:///tmp/.guppy/5555"
+#address = "ipc:///tmp/.dorado/dorado-basecall-server.sock"
 
 [mapper_settings.metagraphRF]
-# port = 5555
-# min_exact_match = 0.4
+port = "5555"		# metagraph server needs to run on this port
+min_exact_match = "0.8" # fraction of basepairs in the query covered by at least 1 seed
+#seed_length = "27"	# sub-k seeding; default is 21
+#connect_anchors = ""   # alignment inbetween chains (true / false)
+#extend_chains = "" 	# extend outwards from first/last seeds in chain (true / false)
 
 [[regions]]
 name = "analysis"
