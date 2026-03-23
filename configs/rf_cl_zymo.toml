@@ -1,6 +1,7 @@
 [caller_settings.dorado]
 config = "dna_r9.4.1_450bps_fast"
 address = "ipc:///tmp/.guppy/5555"
+#address = "ipc:///tmp/.dorado/dorado-basecall-server.sock"
 
 [mapper_settings.pycollinearity]
 # Update the following path
