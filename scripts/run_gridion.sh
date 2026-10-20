@@ -2,7 +2,7 @@
 #
 # Run one readfish decision algorithm on a live MinKNOW sequencing position.
 #
-#   scripts/run_gridion.sh -t <tool> -d <device> -n <experiment_name> [options] [-- <readfish args>]
+#   scripts/run_gridion.sh -t <tool> -d <device> -n <experiment_name> [-s <site.env>] [-e <experiment.env>] [options] [-- <readfish args>]
 #
 # Renders the configs for the site (scripts/render_configs.sh), validates the
 # chosen one, starts a metagraph server for metagraphRF if none is listening,
@@ -22,6 +22,7 @@ usage() {
     echo "  -d, --device     MinKNOW sequencing position, e.g. X1 or MN12345"
     echo "  -n, --name       Experiment name passed to readfish"
     echo "  -s, --site       Site file (default: sites/gridion.env)"
+    echo "  -e, --experiment Experiment file (default: experiments/hxb2.env)"
     echo "      --dry-run    Run readfish without sending unblocks"
     echo "  -h, --help       Display this help message."
     echo ""
@@ -39,6 +40,7 @@ TOOL=""
 DEVICE=""
 NAME=""
 SITE_FILE=$EXPDIR/sites/gridion.env
+EXPERIMENT_FILE=$EXPDIR/experiments/hxb2.env
 READFISH_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -47,6 +49,7 @@ while [[ $# -gt 0 ]]; do
         -d|--device) DEVICE=$2; shift 2 ;;
         -n|--name) NAME=$2; shift 2 ;;
         -s|--site) SITE_FILE=$2; shift 2 ;;
+        -e|--experiment) EXPERIMENT_FILE=$2; shift 2 ;;
         --dry-run) READFISH_ARGS+=(--dry-run); shift ;;
         -h|--help) usage ;;
         --) shift; READFISH_ARGS+=("$@"); break ;;
@@ -63,8 +66,9 @@ fi
 
 # --- Configs ---
 SITE=$(basename "$SITE_FILE" .env)
-"$SCRIPTDIR/render_configs.sh" "$SITE_FILE" > /dev/null
+"$SCRIPTDIR/render_configs.sh" "$SITE_FILE" "$EXPERIMENT_FILE" > /dev/null
 set -a
+source "$EXPERIMENT_FILE"
 source "$SITE_FILE"
 set +a
 TOML=$EXPDIR/configs/generated/$SITE/rf_${TOOL}_${DATASET}.toml
@@ -74,7 +78,7 @@ RUNDIR=$EXPDIR/runs/$(date +"%Y%m%d_%H%M%S")_${TOOL}_${DEVICE}
 mkdir -p "$RUNDIR"
 cp "$TOML" "$RUNDIR/"
 {
-    echo "tool=$TOOL device=$DEVICE experiment_name=$NAME site=$SITE_FILE"
+    echo "tool=$TOOL device=$DEVICE experiment_name=$NAME site=$SITE_FILE experiment=$EXPERIMENT_FILE"
     echo "commit=$(git -C "$EXPDIR" rev-parse HEAD)$(git -C "$EXPDIR" diff --quiet || echo ' (dirty)')"
     echo "readfish $(pip show readfish 2>/dev/null | awk '/^Version/{print $2}')"
 } > "$RUNDIR/run_info.txt"

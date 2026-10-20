@@ -1,14 +1,15 @@
-# Two-region layout; readfish splits the flowcell's channels between the
-# regions in the order listed (split_axis = 1, vertical halves by default).
-# With targets = [] readfish classifies every mapping as "off" target
-# (Targets.check_coord is always False), so *_off decides mapped reads.
+# Two-region layout as in the 2026-03 GridION runs; readfish splits the
+# flowcell's channels between the regions in the order listed.
 
-# Adaptive sampling: keep reads that map to the index, eject unmapped reads.
+# Adaptive sampling: keep reads that map, eject reads that don't.
+# With targets = [] every mapping counts as "off" target, so *_off decides
+# mapped reads.
 [[regions]]
 name = "target"
+control = false
 min_chunks = 1
 max_chunks = 2
-targets = []
+targets = ${TARGETS}
 single_on = "stop_receiving"
 multi_on = "stop_receiving"
 single_off = "stop_receiving"
@@ -16,11 +17,10 @@ multi_off = "stop_receiving"
 no_seq = "proceed"
 no_map = "unblock"
 
-# Control: sequence every read.
+# Control: sequence every read (control = true always sends stop_receiving).
 [[regions]]
 name = "control"
-min_chunks = 1
-max_chunks = 2
+control = true
 targets = []
 single_on = "stop_receiving"
 multi_on = "stop_receiving"

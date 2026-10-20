@@ -2,7 +2,7 @@
 #
 # Check that the readfish decision algorithms are ready to run on this machine.
 #
-#   scripts/check_tools.sh [-s <site.env>] [-t <tool>]... [--sample <reads>]
+#   scripts/check_tools.sh [-s <site.env>] [-e <experiment.env>] [-t <tool>]... [--sample <reads>]
 #
 # For each tool, using its rendered config from scripts/render_configs.sh:
 #   1. plugin   the readfish plugin module imports
@@ -11,7 +11,10 @@
 #   3. validate `readfish validate` initialises caller and aligner
 #               (starts a metagraph server for mg if none is listening)
 #   4. map      with --sample: benchmark_aligner.py runs the plugin on the
-#               given BLOW5/FASTA file(s) and reports the mapped fraction
+#               given BLOW5 file(s), truncated to the readfish decision
+#               window, and reports how many target reads are kept and how
+#               many other reads are ejected (truth from the read IDs and
+#               --manifest, see scripts/make_check_sample.py)
 # Later steps are skipped once a step fails. Logs go to
 # runs/check_<timestamp>/. Expects the selectiveseq conda env to be active.
 #
@@ -26,9 +29,12 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -s, --site       Site file (default: sites/gridion.env)"
+    echo "  -e, --experiment Experiment file (default: experiments/hxb2.env)"
     echo "  -t, --tool       Tool to check, repeatable (default: all of $ALL_TOOLS)"
-    echo "      --sample     BLOW5 or FASTA/Q file, glob or folder for the mapping step"
-    echo "      --batches    Batches of $((BATCH_SIZE)) reads to map per tool (default: $MAX_BATCHES)"
+    echo "      --sample     BLOW5 file, glob or folder for the mapping step"
+    echo "      --manifest   contig/true_label TSV (default: <sample>_manifest.tsv)"
+    echo "      --truncate   raw samples per read (default: $TRUNCATE, 1.2 s at 5 kHz)"
+    echo "      --batches    Batches of $BATCH_SIZE reads to map per tool (default: all)"
     echo "  -h, --help       Display this help message."
     exit 1
 }
@@ -36,16 +42,24 @@ usage() {
 export EXPDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )
 SCRIPTDIR=$EXPDIR/scripts
 SITE_FILE=$EXPDIR/sites/gridion.env
+EXPERIMENT_FILE=$EXPDIR/experiments/hxb2.env
 TOOLS=()
 SAMPLE=""
+MANIFEST=""
+# 6000 samples (1.2 s at 5 kHz) reproduces the live mappy_rs decisions of the
+# 2026-03-25 HXB2 run (58% of HXB2_IN kept, >95% of other reads ejected)
+TRUNCATE=6000
 BATCH_SIZE=512
-MAX_BATCHES=2
+MAX_BATCHES=0
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         -s|--site) SITE_FILE=$2; shift 2 ;;
+        -e|--experiment) EXPERIMENT_FILE=$2; shift 2 ;;
         -t|--tool) TOOLS+=("$2"); shift 2 ;;
         --sample) SAMPLE=$2; shift 2 ;;
+        --manifest) MANIFEST=$2; shift 2 ;;
+        --truncate) TRUNCATE=$2; shift 2 ;;
         --batches) MAX_BATCHES=$2; shift 2 ;;
         -h|--help) usage ;;
         *) echo "Error: Unknown argument '$1'" >&2; usage ;;
@@ -55,12 +69,19 @@ done
 for t in "${TOOLS[@]}"; do
     [[ " $ALL_TOOLS " == *" $t "* ]] || { echo "Error: Unknown tool '$t'." >&2; usage; }
 done
+if [ -n "$SAMPLE" ] && [ -z "$MANIFEST" ]; then
+    MANIFEST=${SAMPLE%.blow5}_manifest.tsv
+fi
+if [ -n "$SAMPLE" ] && [ ! -f "$MANIFEST" ]; then
+    echo "Error: manifest '$MANIFEST' not found; pass --manifest." >&2; exit 1
+fi
 command -v readfish >/dev/null || { echo "Error: readfish not found; activate the selectiveseq env." >&2; exit 1; }
 
 # --- Configs ---
 SITE=$(basename "$SITE_FILE" .env)
-"$SCRIPTDIR/render_configs.sh" "$SITE_FILE" > /dev/null || exit 1
+"$SCRIPTDIR/render_configs.sh" "$SITE_FILE" "$EXPERIMENT_FILE" > /dev/null || exit 1
 set -a
+source "$EXPERIMENT_FILE"
 source "$SITE_FILE"
 set +a
 source "$SCRIPTDIR/gridion_common.sh"
@@ -126,15 +147,21 @@ check_tool() {
             --output "$LOGS/$tool/" \
             --tool "$tool" \
             --dataset check \
+            --manifest "$MANIFEST" \
+            --truncate-signals "$TRUNCATE" \
             --batch-size "$BATCH_SIZE" \
             --max-batches "$MAX_BATCHES" \
             "${basecall_args[@]}" > "$log.map.log" 2>&1; then
         RESULT[$tool,map]="FAIL"; return
     fi
+    # a mapped read is kept (stop_receiving), an unmapped one ejected (unblock)
     RESULT[$tool,map]=$(python -I -c "
-import json
-s = json.load(open('$LOGS/$tool/${tool}_check_summary.json'))
-print(f\"{s['total_mapped']}/{s['total_reads']} mapped\")")
+import csv
+n = {(t, m): 0 for t in '01' for m in '01'}
+for r in csv.DictReader(open('$LOGS/$tool/${tool}_check_per_read.tsv'), delimiter='\t'):
+    n[r['true_label'], str(int(r['mapped'] in ('1', 'True')))] += 1
+tgt, oth = n['1', '1'] + n['1', '0'], n['0', '1'] + n['0', '0']
+print(f\"kept {n['1', '1']}/{tgt} ejected {n['0', '0']}/{oth}\")")
 }
 
 for tool in "${TOOLS[@]}"; do
@@ -145,14 +172,14 @@ done
 
 # --- Summary ---
 echo ""
-printf '%-10s' tool; for s in $STEPS; do printf '%-20s' "$s"; done; echo
+printf '%-10s' tool; for s in $STEPS; do printf '%-30s' "$s"; done; echo
 FAILED=0
 for tool in "${TOOLS[@]}"; do
     printf '%-10s' "$tool"
     for s in $STEPS; do
         r=${RESULT[$tool,$s]:-skipped}
         [ "$r" = "FAIL" ] && FAILED=1
-        printf '%-20s' "$r"
+        printf '%-30s' "$r"
     done
     echo
 done

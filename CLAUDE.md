@@ -26,19 +26,21 @@ Upstream (Sayan) runs **in-silico benchmarks**. This fork is for **deploying the
   - The fork's `setup.sh` adds `set -e`, skip-if-already-built guards, a TurboPFor build plus a CMakeLists patch for collinearity, and GCC 13 header fixes for spumoni.
   - `*_R9.toml` / `env_R9.yml` are untracked R9.4.1 variants.
 
-## Deployment configs (templates → per-machine readfish TOMLs)
+## Deployment configs (templates → per-machine, per-experiment readfish TOMLs)
 
 ```bash
-scripts/render_configs.sh sites/gridion.env          # -> configs/generated/gridion/rf_<tool>_<DATASET>.toml
-DATASET=gut THREADS=8 scripts/render_configs.sh sites/dev.env
-readfish validate configs/generated/gridion/rf_mm_zymo.toml
+scripts/render_configs.sh sites/gridion.env experiments/hxb2.env   # -> configs/generated/gridion/rf_<tool>_hxb2.toml
+THREADS=8 scripts/render_configs.sh sites/dev.env experiments/hxb2.env
+readfish validate configs/generated/gridion/rf_mm_hxb2.toml
+EXPERIMENT=$PWD/experiments/hxb2.env SITE=$PWD/sites/dev.env scripts/task_runner.sh -t build_experiment_indices   # all indices into $INDEX_DIR
 ```
 
 - `configs/templates/rf_<tool>.toml` holds the caller and mapper settings, with `${VAR}` placeholders and tool tuning values taken from upstream's `benchmark_all_zymo.sh`.
-- `configs/regions/<name>.toml` holds the decision policy (`[[regions]]`). It is shared by all tools, selected by `REGIONS`, and appended to every rendered config. The default, `target_control`, is the experimental design used on the GridION: a target half (`no_map` unblock, `no_seq` proceed, everything else stop_receiving) and a control half (stop_receiving everywhere). `min_chunks=1`, `max_chunks=2`, and `above_max_chunks` is left at the readfish default (unblock). readfish only applies `above_max_chunks` when the action would be `proceed`, so it never fires in the control region.
-- `sites/<machine>.env` is a bash file sourced with `EXPDIR` set to the repo root. It sets the basecall socket and model, `THREADS`, `DATASET`, `CODE_DIR`, `INDEX_DIR`, `RB_IBF`, `MG_SERVER_PORT` and `REGIONS`. Values use `: ${VAR:=default}`, so environment variables override them.
+- `configs/regions/<name>.toml` holds the decision policy (`[[regions]]`). It is shared by all tools, selected by `REGIONS`, and appended to every rendered config. The default, `target_control`, reproduces the 2026-03 GridION runs: a target half (`targets = ${TARGETS}`, `no_map` unblock, `no_seq` proceed, everything else stop_receiving) and a control half (`control = true`, stop_receiving everywhere). `min_chunks=1`, `max_chunks=2`, and `above_max_chunks` is left at the readfish default (unblock). readfish only applies `above_max_chunks` when the action would be `proceed`, so it never fires in the control region.
+- `experiments/<name>.env` describes the biology: `DATASET`, the reference `REF` that indices are built from, and `TARGETS` (a TOML list of the target region's contigs). `experiments/hxb2.env` is the HIV HXB2 amplicon experiment: enrich HXB2_IN, with HXB2_PRRT as the off-target amplicon.
+- `sites/<machine>.env` describes the machine: the basecall socket and model, `THREADS`, `CODE_DIR`, `INDEX_DIR`, `RB_IBF`, `MG_SERVER_PORT`/`MG_GRAPH`/`MG_ANNO` and `REGIONS`. The experiment file is sourced first, so the site file can use `DATASET`/`REF`. Both are bash files sourced with `EXPDIR` set to the repo root, and their values use `: ${VAR:=default}`, so environment variables override them.
 - The renderer only substitutes the `${VAR}`s that appear in a template, and it fails if any of them is unset. `configs/generated/` is gitignored.
-- `INDEX_DIR` follows the layout written by `build_all_<dataset>_indices.sh`: `<INDEX_DIR>/<tool>/<DATASET>.*` (`mm/zymo.mmi`, `cl/zymo.cidx`, `mg/zymo.dbg`, `sp/zymo`, `rh/zymo.ind`, `sg/refs/ref`, `rb/Refs1.ibf`).
+- `INDEX_DIR` follows the layout written by `build_experiment_indices.sh` (and upstream's `build_all_<dataset>_indices.sh`): `<INDEX_DIR>/<tool>/<DATASET>.*` (`mm/hxb2.mmi`, `cl/hxb2.cidx`, `mg/hxb2.dbg`, `sp/hxb2`, `rh/hxb2.ind`, `sg/refs/ref`, `rb/<REF basename>.ibf`). The Collinearity index is about 4.3 GB even for the 1.4 kb HXB2_IN reference.
 - readfish semantics: with `targets = []`, every mapped read counts as *off*-target (`Targets.check_coord` is always False). So `*_off` decides what happens to mapped reads and `no_map` decides unmapped ones.
 
 ## Setup
@@ -77,7 +79,7 @@ Post-processing: `analyze_runs.py` (precision/recall/F1 and related metrics per 
 
 ```bash
 conda activate selectiveseq
-scripts/run_gridion.sh -t mm -d X1 -n zymo_mm_run1 [--dry-run] [-s sites/dev.env] [-- <readfish targets args>]
+scripts/run_gridion.sh -t mm -d X1 -n hxb2_mm_run1 [--dry-run] [-s sites/dev.env] [-e experiments/hxb2.env] [-- <readfish targets args>]
 ```
 
 `-t` is one of `mm mg mg_query mg_align sp sg rh rb cl`. The script works through these steps:
@@ -86,7 +88,11 @@ scripts/run_gridion.sh -t mm -d X1 -n zymo_mm_run1 [--dry-run] [-s sites/dev.env
 3. For `mg` (metagraphRF), starts `metagraph server_query -i $MG_GRAPH -a $MG_ANNO --port $MG_SERVER_PORT` on 127.0.0.1, unless a server is already listening. It stops the server again on exit.
 4. Runs `readfish validate`, then `readfish targets` against the local MinKNOW. Simulator env vars are not needed; the script warns if `MINKNOW_SIMULATOR=true` is set.
 
-Before deploying, check every tool with `scripts/check_tools.sh [-s sites/dev.env] [-t <tool>]... [--sample <reads>]`. It runs four steps per tool on the rendered config: plugin import, index paths present, `readfish validate` (starting the metagraph server for `mg`), and, with `--sample`, a short `benchmark_aligner.py` run. It prints a pass/fail table and writes logs to `runs/check_<timestamp>/<tool>.<step>.log`. `scripts/gridion_common.sh` holds the metagraph server helpers shared with `run_gridion.sh`, and `scripts/mapper_settings.py` reads the plugin module, paths and args from a rendered TOML.
+Before deploying, check every tool with `scripts/check_tools.sh [-s sites/dev.env] [-e experiments/hxb2.env] [-t <tool>]... [--sample data/check/hxb2.blow5]`. It runs four steps per tool on the rendered config: plugin import, index paths present, `readfish validate` (starting the metagraph server for `mg`), and, with `--sample`, a `benchmark_aligner.py` run. That run reports `kept <target reads mapped>/<targets> ejected <others unmapped>/<others>`, with signals truncated to `--truncate` samples (default 6000).
+
+Real-data check samples come from `scripts/make_check_sample.py`. It takes reads from the *control* half of a past run (full length, never unblocked), labels them by their primary alignment in the sup-basecall BAM, rewrites the read IDs to `<id>!<contig>!<start>!<end>!<strand>` (the form `benchmark_aligner.py` takes ground truth from), and writes `<out>.blow5` plus `<out>_manifest.tsv`. The 2026-03 HXB2 runs live in `/data/uzh_ont/2026_03`: POD5s, `basecalls/*.bam` (sup v5.2.0, aligned to `refs/all_refs.fasta`), and the readfish chunk logs and logs. The readfish logs embed the exact TOML used, as a base64-encoded, zlib-compressed blob after `readfish.targets eJ...`. Samples go to the gitignored `data/check/`, and the GridION has no data, so copy them over with the indices.
+
+Calibration against the live runs: at 6000 samples (1.2 s), mappy_rs keeps 58–60% of HXB2_IN reads and ejects about 96% of the others, which matches the live 2026-03-25 run (57.9% kept). Live, metagraphRF kept 27.7% (2026-03-30). Offline with a freshly built k=19 graph it keeps only about 16%, so the March graph or server setup was different. It prints a pass/fail table and writes logs to `runs/check_<timestamp>/<tool>.<step>.log`. `scripts/gridion_common.sh` holds the metagraph server helpers shared with `run_gridion.sh`, and `scripts/mapper_settings.py` reads the plugin module, paths and args from a rendered TOML.
 
 metagraphRF caveat: the installed plugin (`code/metagraphRF`, 0.1.0.dev5) only reads `port` and `min_exact_match`. It silently drops `seed_length`, `connect_anchors` and `extend_chains`, so those run at the `GraphClient.align` defaults (19 / true / true), even though the client supports them.
 
