@@ -35,7 +35,7 @@ readfish validate configs/generated/gridion/rf_mm_zymo.toml
 ```
 
 - `configs/templates/rf_<tool>.toml` holds the caller and mapper settings, with `${VAR}` placeholders and tool tuning values taken from upstream's `benchmark_all_zymo.sh`.
-- `configs/regions/<name>.toml` holds the decision policy (`[[regions]]`). It is shared by all tools, selected by `REGIONS`, and appended to every rendered config.
+- `configs/regions/<name>.toml` holds the decision policy (`[[regions]]`). It is shared by all tools, selected by `REGIONS`, and appended to every rendered config. The default, `target_control`, is the experimental design used on the GridION: a target half (`no_map` unblock, `no_seq` proceed, everything else stop_receiving) and a control half (stop_receiving everywhere, including `above_max_chunks`).
 - `sites/<machine>.env` is a bash file sourced with `EXPDIR` set to the repo root. It sets the basecall socket and model, `THREADS`, `DATASET`, `CODE_DIR`, `INDEX_DIR`, `RB_IBF`, `MG_SERVER_PORT` and `REGIONS`. Values use `: ${VAR:=default}`, so environment variables override them.
 - The renderer only substitutes the `${VAR}`s that appear in a template, and it fails if any of them is unset. `configs/generated/` is gitignored.
 - `INDEX_DIR` follows the layout written by `build_all_<dataset>_indices.sh`: `<INDEX_DIR>/<tool>/<DATASET>.*` (`mm/zymo.mmi`, `cl/zymo.cidx`, `mg/zymo.dbg`, `sp/zymo`, `rh/zymo.ind`, `sg/refs/ref`, `rb/Refs1.ibf`).

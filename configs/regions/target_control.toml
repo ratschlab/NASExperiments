@@ -1,0 +1,31 @@
+# Two-region layout; readfish splits the flowcell's channels between the
+# regions in the order listed (split_axis = 1, vertical halves by default).
+# With targets = [] readfish classifies every mapping as "off" target
+# (Targets.check_coord is always False), so *_off decides mapped reads.
+
+# Adaptive sampling: keep reads that map to the index, eject unmapped reads.
+[[regions]]
+name = "target"
+min_chunks = 1
+max_chunks = 2
+targets = []
+single_on = "stop_receiving"
+multi_on = "stop_receiving"
+single_off = "stop_receiving"
+multi_off = "stop_receiving"
+no_seq = "proceed"
+no_map = "unblock"
+
+# Control: sequence every read.
+[[regions]]
+name = "control"
+min_chunks = 1
+max_chunks = 2
+targets = []
+single_on = "stop_receiving"
+multi_on = "stop_receiving"
+single_off = "stop_receiving"
+multi_off = "stop_receiving"
+no_seq = "stop_receiving"
+no_map = "stop_receiving"
+above_max_chunks = "stop_receiving"

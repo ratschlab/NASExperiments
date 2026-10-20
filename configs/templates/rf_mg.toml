@@ -5,7 +5,7 @@ address = "${BASECALL_ADDRESS}"
 # metagraphRF talks to a running metagraph server (started separately)
 [mapper_settings.metagraphRF]
 port = "${MG_SERVER_PORT}"	# metagraph server needs to run on this port
-min_exact_match = "0.8"	# fraction of basepairs in the query covered by at least 1 seed
-#seed_length = "27"	# sub-k seeding; default is 21
-#connect_anchors = ""	# alignment inbetween chains (true / false)
-#extend_chains = ""	# extend outwards from first/last seeds in chain (true / false)
+min_exact_match = 0.3	# fraction of basepairs in the query covered by at least 1 seed
+seed_length = 23	# sub-k seeding; default is 21
+connect_anchors = true	# alignment inbetween chains (true / false)
+extend_chains = true	# extend outwards from first/last seeds in chain (true / false)
