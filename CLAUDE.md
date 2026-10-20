@@ -50,7 +50,7 @@ conda env create -f env.yml && conda activate selectiveseq
 
 - Metagraph's CLI build needs system static Boost (`libboost-all-dev`). Conda Boost is not enough.
 - `ont-dorado-server` is not installed by `setup.sh`. It is extracted manually into `code/ont-dorado-server/`, and `run_dorado_v0.7.4.sh` starts it locally.
-- The `ont-pybasecall-client-lib` version (dorado ≥7.3) or `ont-pyguppy-client-lib` version (≤7.2) must match the server version. `tools/basecall.py` switches between them with commented imports.
+- The `ont-pybasecall-client-lib` version (dorado ≥7.3) or `ont-pyguppy-client-lib` version (≤7.2) must match the server version. `tools/basecall.py` switches between them with commented imports. Check the server with `/opt/ont/dorado/bin/dorado_basecall_server --version`. A mismatched client does not error out: readfish hangs at "Initialising Caller", and the server log (`/var/log/dorado/`) keeps showing "Clients connected: 0". As of 2026-10-20, both the GridION and the dev server (`selseq`, which also runs MinKNOW) have dorado server 7.13.6 (API 26.0.0), so the pin is client 7.13.6.
 
 ## Running experiments: the task-runner pattern
 
@@ -72,6 +72,21 @@ SIGNAL_LENGTH=3200 scripts/task_runner.sh -t benchmark_all_zymo 2
 Ground truth comes from read IDs (squigulator `<prefix>!<contig>!<start>!<end>!<strand>`, seq2squiggle without the prefix). A manifest TSV (`contig`, `true_label`, built by `make_manifest.py`) maps each contig to a target (1, Community 1) or deplete (0, Community 0) label.
 
 Post-processing: `analyze_runs.py` (precision/recall/F1 and related metrics per tool/run) and `bootstrap_ci.py` (95% CIs). Data simulation: `run_seq2squiggle.sh`, `sample_reads.py`, `qc_signals.sh`, plus `simulation/` (squigulator; documents how the Zymo data was generated).
+
+## Live runs on the GridION
+
+```bash
+conda activate selectiveseq
+scripts/run_gridion.sh -t mm -d X1 -n zymo_mm_run1 [--dry-run] [-s sites/dev.env] [-- <readfish targets args>]
+```
+
+`-t` is one of `mm mg mg_query mg_align sp sg rh rb cl`. The script works through these steps:
+1. Renders the site's configs.
+2. Creates `runs/<timestamp>_<tool>_<device>/` (gitignored). It holds the config used, `run_info.txt` (commit, readfish version), the readfish logs, and the chunk-log TSV that readfish writes to the current working directory.
+3. For `mg` (metagraphRF), starts `metagraph server_query -i $MG_GRAPH -a $MG_ANNO --port $MG_SERVER_PORT` on 127.0.0.1, unless a server is already listening. It stops the server again on exit.
+4. Runs `readfish validate`, then `readfish targets` against the local MinKNOW. Simulator env vars are not needed; the script warns if `MINKNOW_SIMULATOR=true` is set.
+
+metagraphRF caveat: the installed plugin (`code/metagraphRF`, 0.1.0.dev5) only reads `port` and `min_exact_match`. It silently drops `seed_length`, `connect_anchors` and `extend_chains`, so those run at the `GraphClient.align` defaults (19 / true / true), even though the client supports them.
 
 ## Live readfish runs against the MinKNOW simulator
 
