@@ -86,6 +86,8 @@ scripts/run_gridion.sh -t mm -d X1 -n zymo_mm_run1 [--dry-run] [-s sites/dev.env
 3. For `mg` (metagraphRF), starts `metagraph server_query -i $MG_GRAPH -a $MG_ANNO --port $MG_SERVER_PORT` on 127.0.0.1, unless a server is already listening. It stops the server again on exit.
 4. Runs `readfish validate`, then `readfish targets` against the local MinKNOW. Simulator env vars are not needed; the script warns if `MINKNOW_SIMULATOR=true` is set.
 
+Before deploying, check every tool with `scripts/check_tools.sh [-s sites/dev.env] [-t <tool>]... [--sample <reads>]`. It runs four steps per tool on the rendered config: plugin import, index paths present, `readfish validate` (starting the metagraph server for `mg`), and, with `--sample`, a short `benchmark_aligner.py` run. It prints a pass/fail table and writes logs to `runs/check_<timestamp>/<tool>.<step>.log`. `scripts/gridion_common.sh` holds the metagraph server helpers shared with `run_gridion.sh`, and `scripts/mapper_settings.py` reads the plugin module, paths and args from a rendered TOML.
+
 metagraphRF caveat: the installed plugin (`code/metagraphRF`, 0.1.0.dev5) only reads `port` and `min_exact_match`. It silently drops `seed_length`, `connect_anchors` and `extend_chains`, so those run at the `GraphClient.align` defaults (19 / true / true), even though the client supports them.
 
 ## Live readfish runs against the MinKNOW simulator

@@ -81,41 +81,10 @@ cp "$TOML" "$RUNDIR/"
 echo "Run directory: $RUNDIR"
 
 # --- metagraph server for metagraphRF ---
-mg_ready() {
-    python -I -c "
-import sys
-from metagraph.client import GraphClient
-try:
-    sys.exit(0 if GraphClient('localhost', port=$MG_SERVER_PORT, api_path='').ready() else 1)
-except Exception:
-    sys.exit(1)
-" 2>/dev/null
-}
-
-MG_PID=""
-cleanup() {
-    if [ -n "$MG_PID" ]; then
-        echo "Stopping metagraph server (pid $MG_PID)"
-        kill "$MG_PID" 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT
-
+source "$SCRIPTDIR/gridion_common.sh"
+trap mg_server_stop EXIT
 if [ "$TOOL" = "mg" ]; then
-    if mg_ready; then
-        echo "Using metagraph server already listening on port $MG_SERVER_PORT."
-    else
-        echo "Starting metagraph server on port $MG_SERVER_PORT ($MG_GRAPH, $MG_ANNO)"
-        metagraph server_query -i "$MG_GRAPH" -a "$MG_ANNO" \
-            --port "$MG_SERVER_PORT" --address 127.0.0.1 -p "$THREADS" \
-            > "$RUNDIR/metagraph_server.log" 2>&1 &
-        MG_PID=$!
-        until mg_ready; do
-            kill -0 "$MG_PID" 2>/dev/null || { echo "Error: metagraph server exited, see $RUNDIR/metagraph_server.log" >&2; exit 1; }
-            sleep 2
-        done
-        echo "metagraph server ready."
-    fi
+    mg_server_start "$RUNDIR/metagraph_server.log"
 fi
 
 # --- Run readfish ---
