@@ -63,7 +63,25 @@ fi
 cd $EXPDIR/code
 [ -d metagraph ] || git clone -b sg/readfish-bindings --recursive https://github.com/ratschlab/metagraph.git
 cd metagraph
+if [ "$(git branch --show-current)" != "sg/readfish-bindings" ]; then
+    echo "WARNING: code/metagraph is on '$(git branch --show-current)', not sg/readfish-bindings;" >&2
+    echo "         pymetagraph needs that branch (git -C code/metagraph checkout sg/readfish-bindings)." >&2
+fi
 git submodule update --init --recursive
+
+# sdsl-lite is not built by metagraph's CMake project; it must be installed into
+# external-libraries/sdsl-lite first. Build it position-independent, which the
+# pymetagraph .so needs and which also links fine into the static CLI binary.
+if [ ! -f metagraph/external-libraries/sdsl-lite/lib/libsdsl.a ]; then
+    cd metagraph/external-libraries/sdsl-lite
+    mkdir -p build && cd build
+    cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX=$(cd .. && pwd) ..
+    make -j 16 && make install
+    cd $EXPDIR/code/metagraph
+fi
+# sdsl's install ships an old gtest that breaks metagraph's unit_tests build
+rm -rf metagraph/external-libraries/sdsl-lite/include/gtest
+
 mkdir -p metagraph/build
 cd metagraph/build
 
@@ -89,7 +107,7 @@ if [ -f metagraph_DNA ]; then
   echo "metagraph binary found, skipping."
 elif [ -n "$BOOST_DIR" ] && [ -n "$BOOST_IOSTREAMS_DIR" ]; then
   cmake -DBoost_DIR="$BOOST_DIR" -Dboost_iostreams_DIR="$BOOST_IOSTREAMS_DIR" ..
-  make -j 16
+  make -j 16 metagraph
 else
   echo "WARNING: skipping the metagraph CLI/server build -- could not find or" >&2
   echo "         install a system Boost with static libs (libboost-all-dev)." >&2
@@ -104,7 +122,14 @@ fi
 # workaround above isn't needed here.
 if ! pip show pymetagraph &>/dev/null; then
     cd $EXPDIR/code/metagraph/metagraph/api/python/pymetagraph
-    pip install .
+    # a failed earlier attempt leaves a CMake cache pointing at pip's deleted build env
+    rm -rf build
+    # point it at the system Boost, not the conda env's
+    if [ -n "$BOOST_DIR" ] && [ -n "$BOOST_IOSTREAMS_DIR" ]; then
+        CMAKE_ARGS="-DBoost_DIR=$BOOST_DIR -Dboost_iostreams_DIR=$BOOST_IOSTREAMS_DIR" pip install .
+    else
+        pip install .
+    fi
 else
     echo "pymetagraph already installed, skipping."
 fi
@@ -170,8 +195,9 @@ pip install .
 cd $EXPDIR/code
 [ -d sigmoni ] || git clone https://github.com/ratschlab/sigmoni.git
 cd sigmoni
-pip install uncalled4
-pip install .
+pip install "setuptools<81" uncalled4   # ont_fast5_api needs pkg_resources
+# editable: sigmoni loads its pore models from <source>/poremodel/
+pip install -e .
 
 # setup seq2squiggle
 cd $EXPDIR/code

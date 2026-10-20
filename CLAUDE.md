@@ -51,6 +51,16 @@ conda env create -f env.yml && conda activate selectiveseq
 ```
 
 - Metagraph's CLI build needs system static Boost (`libboost-all-dev`). Conda Boost is not enough.
+- Build gotchas, all handled in `setup.sh` / `build_experiment_indices.sh`:
+  - metagraph needs its bundled sdsl-lite installed first, built with `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` (pymetagraph's `.so` needs PIC). Remove `sdsl-lite/include/gtest` afterwards.
+  - pymetagraph needs `CMAKE_ARGS="-DBoost_DIR=..."` pointing at the system Boost. Delete `api/python/pymetagraph/build/` after a failed attempt, because its cache points at pip's deleted build env.
+  - Sigmoni must be installed editable (`pip install -e .`), because it loads pore models from `<source>/poremodel/`.
+  - Sigmoni's dependency `ont_fast5_api` needs `setuptools<81` (`pkg_resources`).
+  - Sigmoni needs spumoni ≥ `fcaa6c5` (`get_pml_batch`).
+  - RawHash needs its `cmake` branch (R10.4.1 k-mer model).
+- The skip-if-built guards in `setup.sh` never update an existing checkout, so pull and rebuild by hand when a tool's upstream changes.
+- metagraph graphs must be built by the `sg/readfish-bindings` binary (`code/metagraph/metagraph/build/metagraph`, v0.4.5, first on `task_runner.sh`'s PATH). pymetagraph cannot read annotations written by conda's metagraph 0.5.1 ("can't load label encoder"), but 0.5.1's `server_query` (used for metagraphRF) reads graphs built by 0.4.5.
+- `build_experiment_indices.sh` re-wraps `REF` into `$INDEX_DIR/ref/` because pysam (and so Sigmoni) rejects FASTAs with uneven line lengths, such as `HXB2_IN.fasta`.
 - `ont-dorado-server` is not installed by `setup.sh`. It is extracted manually into `code/ont-dorado-server/`, and `run_dorado_v0.7.4.sh` starts it locally.
 - The `ont-pybasecall-client-lib` version (dorado ≥7.3) or `ont-pyguppy-client-lib` version (≤7.2) must match the server version. `tools/basecall.py` switches between them with commented imports. Check the server with `/opt/ont/dorado/bin/dorado_basecall_server --version`. A mismatched client does not error out: readfish hangs at "Initialising Caller", and the server log (`/var/log/dorado/`) keeps showing "Clients connected: 0". As of 2026-10-20, both the GridION and the dev server (`selseq`, which also runs MinKNOW) have dorado server 7.13.6 (API 26.0.0), so the pin is client 7.13.6. Dorado 7.13 expects the model as a model set (`dna_r10.4.1_e8.2_400bps_fast@v5.2.0||`). Without the `||` the server rejects it with `basecall_config_unavailable`.
 

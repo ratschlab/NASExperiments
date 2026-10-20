@@ -23,6 +23,13 @@ export OUTDIR=$INDEX_DIR
 export NUM_THREADS=$THREADS
 export OMP_NUM_THREADS=$NUM_THREADS
 
+# Re-wrap the reference to a fixed line length (some FASTAs, e.g. HXB2_IN, have
+# uneven lines, which pysam/samtools faidx and hence sigmoni reject).
+mkdir -p $OUTDIR/ref
+awk '/^>/ { if (seq) print seq; print; seq = ""; next } { seq = seq $0 } END { if (seq) print seq }' $REF \
+    | fold -w 60 > $OUTDIR/ref/$(basename $REF)
+export REF=$OUTDIR/ref/$(basename $REF)
+
 f1() {
     build_start cl "Building Collinearity index for $DATASET.."
     measure Collinearity \
