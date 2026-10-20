@@ -48,7 +48,7 @@ fi
 cd $EXPDIR/code
 if ! pip show metagraphRF &> /dev/null 
 then
-    conda install -c bioconda -c conda-forge metagraph
+    conda install -c bioconda -c conda-forge metagraph=0.5.1
     [ ! -d metagraphRF ] && git clone https://github.com/ratschlab/metagraphRF
     cd metagraphRF
     pip show metagraphRF &>/dev/null || pip install .

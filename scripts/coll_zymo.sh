@@ -7,7 +7,7 @@ export ALL_TASKS="0-2"
 # other variables
 export DATADIR=/data/SimulatedDatasets/Zymo
 
-export COLLINEARITY=/tmp/tmp.nyy4hBNiZM/collinearity/cmake-build-debug/Collinearity
+export COLLINEARITY=/scratch/NASExperiments_grlab/code/collinearity/build/Collinearity #/tmp/tmp.nyy4hBNiZM/collinearity/cmake-build-debug/Collinearity
 
 # --- Individual Task Functions ---
 
@@ -28,7 +28,7 @@ f1() {
 
         measure $COLLINEARITY \
         --idx $TMPDIR/Zymo \
-        --qry $DATADIR/reads/Reads0_180.fasta $DATADIR/reads/Reads1_180.fasta \
+        --qry $DATADIR/MinION_R10.4.1/reads/Reads0_180.fasta $DATADIR/MinION_R10.4.1/reads/Reads1_180.fasta \
         --out $OUTDIR/zymo-cl-${bw}.tsv;
     done
 }
@@ -45,7 +45,7 @@ f2() {
 
         measure $COLLINEARITY \
         --idx $TMPDIR/Zymo \
-        --qry $DATADIR/reads/Reads0_180.fasta $DATADIR/reads/Reads1_180.fasta \
+        --qry $DATADIR/MinION_R10.4.1/reads/Reads0_180.fasta $DATADIR/MinION_R10.4.1/reads/Reads1_180.fasta \
         --out $OUTDIR/zymo-cl-${bw}.tsv;
     done
 }

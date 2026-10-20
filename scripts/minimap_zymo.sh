@@ -12,6 +12,6 @@ f0() {
 }
 
 f1() {
-    measure minimap2 -x map-ont --secondary=no $TMPDIR/zymo.mmi $DATADIR/reads/Reads0_180.fasta > $OUTDIR/zymo-mm.paf
-    measure minimap2 -x map-ont --secondary=no $TMPDIR/zymo.mmi $DATADIR/reads/Reads1_180.fasta >> $OUTDIR/zymo-mm.paf
+    measure minimap2 -x map-ont --secondary=no $TMPDIR/zymo.mmi $DATADIR/MinION_R10.4.1/reads/Reads0_180.fasta > $OUTDIR/zymo-mm.paf
+    measure minimap2 -x map-ont --secondary=no $TMPDIR/zymo.mmi $DATADIR/MinION_R10.4.1/reads/Reads1_180.fasta >> $OUTDIR/zymo-mm.paf
 }

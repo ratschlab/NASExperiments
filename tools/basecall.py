@@ -3,12 +3,12 @@ from time import sleep
 import sys
 
 # dorado v7.4 and later
-# from pybasecall_client_lib.helper_functions import package_read
-# from pybasecall_client_lib.pyclient import PyBasecallClient as pclient
+from pybasecall_client_lib.helper_functions import package_read
+from pybasecall_client_lib.pyclient import PyBasecallClient as pclient
 
 # dorado v7.2 or below
-from pyguppy_client_lib.helper_functions import package_read
-from pyguppy_client_lib.pyclient import PyGuppyClient as pclient
+#from pyguppy_client_lib.helper_functions import package_read
+#from pyguppy_client_lib.pyclient import PyGuppyClient as pclient
 
 #guppy
 
@@ -93,7 +93,9 @@ def basecall(blow5_in, fasta_out, address="ipc:///tmp/.guppy/5555", config="dna_
             req = package_read(read_id=read['read_id'],
                                raw_data=read['signal'], daq_offset=read['offset'],
                                daq_scaling=calibration(read['digitisation'], read['range']),
-                               read_tag=read_count)
+                               read_tag=read_count,
+                               sampling_rate=read['sampling_rate'],
+                               start_time=100)
             requests.append(req)
             read_count += 1
             n_sent += 1
