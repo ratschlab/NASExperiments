@@ -1,0 +1,7 @@
+[caller_settings.dorado]
+config = "${BASECALL_CONFIG}"
+address = "${BASECALL_ADDRESS}"
+
+[mapper_settings.pycollinearity]
+input = "${INDEX_DIR}/cl/${DATASET}.cidx"
+n_threads = ${THREADS}

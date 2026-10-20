@@ -1,0 +1,9 @@
+[caller_settings.dorado]
+config = "${BASECALL_CONFIG}"
+address = "${BASECALL_ADDRESS}"
+
+[mapper_settings.pyspumoni]
+ref = "${INDEX_DIR}/sp/${DATASET}"
+threads = ${THREADS}
+PML = true
+minimizer_alphabet = true

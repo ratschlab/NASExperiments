@@ -1,0 +1,8 @@
+[caller_settings.dorado]
+config = "${BASECALL_CONFIG}"
+address = "${BASECALL_ADDRESS}"
+
+[mapper_settings.mappy_rs]
+fn_idx_in = "${INDEX_DIR}/mm/${DATASET}.mmi"
+n_threads = ${THREADS}
+best_n = 1

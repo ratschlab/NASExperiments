@@ -1,0 +1,15 @@
+[caller_settings.dorado]
+config = "${BASECALL_CONFIG}"
+address = "${BASECALL_ADDRESS}"
+
+[mapper_settings.pymetagraph]
+method = "align"
+input = "${INDEX_DIR}/mg/${DATASET}.dbg"
+annotator = "${INDEX_DIR}/mg/${DATASET}.column.annodbg"
+threads = ${THREADS}
+seed_length = 19
+max_alternative_alignments = 1	# default - 1
+max_num_nodes_per_seq_char = 5	# default - 10
+min_exact_match = 0.5	# default - 0
+connect_anchors = false	# default - true
+extend_chains = false	# default - true

@@ -1,0 +1,12 @@
+# raw-signal mapper: no basecaller
+[caller_settings.sigmoni]
+
+[mapper_settings.sigmoni]
+ref_prefix = "${INDEX_DIR}/sg/refs/ref"
+spumoni_path = "${CODE_DIR}/spumoni/build"
+threads = ${THREADS}
+multi = true
+complexity = true	# this must be set to true
+sig_proc = false
+nbins = 6
+threshold = 2.0		# best hit must be 2x stronger than second-best

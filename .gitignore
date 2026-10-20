@@ -6,3 +6,4 @@ logs/
 results/
 tools/__pycache__/
 .vscode
+configs/generated/

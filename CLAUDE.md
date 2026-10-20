@@ -21,10 +21,25 @@ Upstream (Sayan) runs **in-silico benchmarks**. This fork is for **deploying the
 - `upstream` = the local checkout `/scratch/NASExperiments` (tracks `sayangoswami/NASExperiments`, branches `main` and `pmh`).
 - `git fetch upstream` fails with "dubious ownership" because user `sayan` owns that repo. `git -c safe.directory=...` and `GIT_CONFIG_*` env vars don't fix it, because they don't reach the local upload-pack. It needs a one-time `git config --global --add safe.directory /scratch/NASExperiments/.git`, or a fetch straight from `git@github.com:sayangoswami/NASExperiments.git`.
 - Fork-specific differences to keep when syncing:
-  - The fork keeps the server-based **metagraphRF** plugin (`configs/rf_mg_zymo.toml`, conda `metagraph=0.5.1`) next to upstream's **pymetagraph** bindings (`rf_mg_align_zymo.toml` / `rf_mg_query_zymo.toml`).
-  - Configs point at the local dorado server socket `ipc:///tmp/.dorado/dorado-basecall-server.sock` and at `/scratch/NASExperiments_grlab/...` paths. Upstream uses the MinKNOW socket `/var/lib/minknow/data/.dorado/...` and `/scratch/NASExperiments/...`.
+  - The fork keeps the server-based **metagraphRF** plugin (`configs/templates/rf_mg.toml`, conda `metagraph=0.5.1`) next to upstream's **pymetagraph** bindings (`rf_mg_query` / `rf_mg_align`).
+  - `configs/rf_*_zymo.toml` are upstream's benchmark configs. Keep them identical to upstream so merges stay clean. The fork's deployment configs are generated from templates (see below).
   - The fork's `setup.sh` adds `set -e`, skip-if-already-built guards, a TurboPFor build plus a CMakeLists patch for collinearity, and GCC 13 header fixes for spumoni.
-  - `*_R9.toml` / `env_R9.yml` are R9.4.1 variants.
+  - `*_R9.toml` / `env_R9.yml` are untracked R9.4.1 variants.
+
+## Deployment configs (templates → per-machine readfish TOMLs)
+
+```bash
+scripts/render_configs.sh sites/gridion.env          # -> configs/generated/gridion/rf_<tool>_<DATASET>.toml
+DATASET=gut THREADS=8 scripts/render_configs.sh sites/dev.env
+readfish validate configs/generated/gridion/rf_mm_zymo.toml
+```
+
+- `configs/templates/rf_<tool>.toml` holds the caller and mapper settings, with `${VAR}` placeholders and tool tuning values taken from upstream's `benchmark_all_zymo.sh`.
+- `configs/regions/<name>.toml` holds the decision policy (`[[regions]]`). It is shared by all tools, selected by `REGIONS`, and appended to every rendered config.
+- `sites/<machine>.env` is a bash file sourced with `EXPDIR` set to the repo root. It sets the basecall socket and model, `THREADS`, `DATASET`, `CODE_DIR`, `INDEX_DIR`, `RB_IBF`, `MG_SERVER_PORT` and `REGIONS`. Values use `: ${VAR:=default}`, so environment variables override them.
+- The renderer only substitutes the `${VAR}`s that appear in a template, and it fails if any of them is unset. `configs/generated/` is gitignored.
+- `INDEX_DIR` follows the layout written by `build_all_<dataset>_indices.sh`: `<INDEX_DIR>/<tool>/<DATASET>.*` (`mm/zymo.mmi`, `cl/zymo.cidx`, `mg/zymo.dbg`, `sp/zymo`, `rh/zymo.ind`, `sg/refs/ref`, `rb/Refs1.ibf`).
+- readfish semantics: with `targets = []`, every mapped read counts as *off*-target (`Targets.check_coord` is always False). So `*_off` decides what happens to mapped reads and `no_map` decides unmapped ones.
 
 ## Setup
 

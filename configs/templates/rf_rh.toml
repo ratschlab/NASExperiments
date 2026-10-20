@@ -1,0 +1,7 @@
+# raw-signal mapper: no basecaller
+[caller_settings.pyrawhash]
+
+[mapper_settings.pyrawhash]
+idx = "${INDEX_DIR}/rh/${DATASET}.ind"
+threads = ${THREADS}
+x = "viral"
