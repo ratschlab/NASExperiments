@@ -50,7 +50,7 @@ conda env create -f env.yml && conda activate selectiveseq
 
 - Metagraph's CLI build needs system static Boost (`libboost-all-dev`). Conda Boost is not enough.
 - `ont-dorado-server` is not installed by `setup.sh`. It is extracted manually into `code/ont-dorado-server/`, and `run_dorado_v0.7.4.sh` starts it locally.
-- The `ont-pybasecall-client-lib` version (dorado ≥7.3) or `ont-pyguppy-client-lib` version (≤7.2) must match the server version. `tools/basecall.py` switches between them with commented imports. Check the server with `/opt/ont/dorado/bin/dorado_basecall_server --version`. A mismatched client does not error out: readfish hangs at "Initialising Caller", and the server log (`/var/log/dorado/`) keeps showing "Clients connected: 0". As of 2026-10-20, both the GridION and the dev server (`selseq`, which also runs MinKNOW) have dorado server 7.13.6 (API 26.0.0), so the pin is client 7.13.6.
+- The `ont-pybasecall-client-lib` version (dorado ≥7.3) or `ont-pyguppy-client-lib` version (≤7.2) must match the server version. `tools/basecall.py` switches between them with commented imports. Check the server with `/opt/ont/dorado/bin/dorado_basecall_server --version`. A mismatched client does not error out: readfish hangs at "Initialising Caller", and the server log (`/var/log/dorado/`) keeps showing "Clients connected: 0". As of 2026-10-20, both the GridION and the dev server (`selseq`, which also runs MinKNOW) have dorado server 7.13.6 (API 26.0.0), so the pin is client 7.13.6. Dorado 7.13 expects the model as a model set (`dna_r10.4.1_e8.2_400bps_fast@v5.2.0||`). Without the `||` the server rejects it with `basecall_config_unavailable`.
 
 ## Running experiments: the task-runner pattern
 
