@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Benchmarking harness for **selective (adaptive) nanopore sequencing**: it compares read classifiers (minimap2/mappy_rs, Collinearity, Metagraph, SPUMONI, Sigmoni, RawHash2, ReadBouncer) used as [readfish](https://github.com/LooseLab/readfish) aligner plugins, on simulated Zymo and Gut datasets that live under `/data/SimulatedDatasets/`. There is no build system, test suite or linter. The repo is bash task scripts, Python analysis scripts and readfish TOML configs. External tools are cloned and built into `code/` by `setup.sh`.
 
+## Purpose of this fork
+
+Upstream (Sayan) runs **in-silico benchmarks**. This fork is for **deploying the decision algorithms on an ONT GridION (Ubuntu 24.04) and running them on real data**. This checkout (`/scratch/NASExperiments_grlab`) is the development copy on a separate Linux server. The final checkout lives on the GridION, so:
+- Configs and scripts must not depend on `/scratch/...` paths or on this server's layout.
+- On the GridION, MinKNOW manages the dorado basecall server at `ipc:///var/lib/minknow/data/.dorado/dorado-basecall-server.sock`. `/tmp/.dorado/...` is only the dev server's local server.
+- Real runs talk to a live MinKNOW, not `MinknoApiSimulator`, so the simulator-only `MINKNOW_SIMULATOR`/cert env vars don't apply.
+- Ubuntu 24.04 ships GCC 13 (hence the spumoni header fixes in `setup.sh`) and needs `libboost-all-dev` via apt for the metagraph CLI.
+- Never modify Sayan's checkout `/scratch/NASExperiments`; only read from it as the `upstream` remote.
+
 ## Fork / upstream layout
 
 - `origin` = `ratschlab/NASExperiments` (this fork, the grlab copy at `/scratch/NASExperiments_grlab`).
