@@ -5,3 +5,6 @@
 idx = "${INDEX_DIR}/rh/${DATASET}.ind"
 threads = ${THREADS}
 x = "viral"
+r10 = true		# R10.4.1 event detection at mapping time too (the index is built with --r10)
+min_mapq = 15	# HXB2 check sample, 1.2 s: 18% of targets kept, 4.7% of other reads
+				# (mapq 10: 28% / 13%, 20: 10% / 1.7%; without a cutoff 66% / 51%)

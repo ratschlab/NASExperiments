@@ -1,4 +1,10 @@
 # raw-signal mapper: no basecaller
+# NOTE (HXB2 check sample, 2026-10-20): Sigmoni does not discriminate on R10.4.1
+# HXB2 reads. With the single-reference index, multi = true keeps every read
+# (best/second ratio is unbounded) and binary mode keeps ~1%. With HXB2_PRRT
+# as a second class or as a negative reference, keep rates of targets and
+# other reads stay equal at every threshold. Its read binning uses an R9
+# 6-mer model (sigmoni/utils.py: template_median68pA.model).
 [caller_settings.sigmoni]
 
 [mapper_settings.sigmoni]

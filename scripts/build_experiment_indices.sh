@@ -18,7 +18,6 @@ source "$EXPERIMENT"
 source "$SITE"
 set +a
 export RAWHASH_DIR=$CODEDIR/rawhash2
-export PATH=$RAWHASH_DIR/build/bin:$PATH
 export OUTDIR=$INDEX_DIR
 export NUM_THREADS=$THREADS
 export OMP_NUM_THREADS=$NUM_THREADS
