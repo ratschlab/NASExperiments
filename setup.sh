@@ -233,9 +233,12 @@ cd seq2squiggle
 pip install .
 
 step "MinKNOW API simulator"
-# Setup Minknow API Simulator
+# Setup Minknow API Simulator (only for simulated runs, not needed for live runs
+# on a GridION; skip with SKIP_SIMULATOR=1)
 cd $EXPDIR/code
-if ! pip show mksim &>/dev/null; then
+if [ "${SKIP_SIMULATOR:-0}" = 1 ]; then
+    echo "SKIP_SIMULATOR=1, skipping."
+elif ! pip show mksim &>/dev/null; then
     [ -d MinknoApiSimulator ] || git clone https://github.com/ratschlab/MinknoApiSimulator.git
     cd MinknoApiSimulator/certs
     ./generate.sh
