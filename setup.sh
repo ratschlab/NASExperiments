@@ -227,11 +227,11 @@ pip install -e .
 
 step "seq2squiggle"
 # setup seq2squiggle (signal simulation only, not needed for live runs on a GridION;
-# pulls in torch with CUDA wheels, several GB, and pins numpy ^1.26;
-# skip with SKIP_SEQ2SQUIGGLE=1)
+# pulls in torch with CUDA wheels, ~5 GB, and pins numpy ^1.26;
+# opt-in with WITH_SIMULATION=1)
 cd $EXPDIR/code
-if [ "${SKIP_SEQ2SQUIGGLE:-0}" = 1 ]; then
-    echo "SKIP_SEQ2SQUIGGLE=1, skipping."
+if [ "${WITH_SIMULATION:-0}" != 1 ]; then
+    echo "skipping (simulation tools are opt-in: WITH_SIMULATION=1)"
 else
     [ -d seq2squiggle ] || git clone https://github.com/ZKI-PH-ImageAnalysis/seq2squiggle.git
     cd seq2squiggle
@@ -240,10 +240,10 @@ fi
 
 step "MinKNOW API simulator"
 # Setup Minknow API Simulator (only for simulated runs, not needed for live runs
-# on a GridION; skip with SKIP_SIMULATOR=1)
+# on a GridION; opt-in with WITH_SIMULATION=1)
 cd $EXPDIR/code
-if [ "${SKIP_SIMULATOR:-0}" = 1 ]; then
-    echo "SKIP_SIMULATOR=1, skipping."
+if [ "${WITH_SIMULATION:-0}" != 1 ]; then
+    echo "skipping (simulation tools are opt-in: WITH_SIMULATION=1)"
 elif ! pip show mksim &>/dev/null; then
     [ -d MinknoApiSimulator ] || git clone https://github.com/ratschlab/MinknoApiSimulator.git
     cd MinknoApiSimulator/certs
