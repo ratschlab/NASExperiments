@@ -74,4 +74,11 @@ pip check 2>&1 | tail -5
 
 section "Basecaller"
 /opt/ont/dorado/bin/dorado_basecall_server --version 2>&1 | grep -m1 -i version | sed 's/^[: ]*//'
-ls -la /var/lib/minknow/data/.dorado/dorado-basecall-server.sock 2>&1
+source "$EXPDIR/scripts/gridion_common.sh"
+address=$(dorado_address)
+echo "running server listens on: ${address:-no dorado_basecall_server running}"
+if [[ "$address" == ipc://* ]]; then
+    ls -la "${address#ipc://}" 2>&1
+    [ -w "${address#ipc://}" ] && echo "socket writable by $(whoami): yes" || echo "socket writable by $(whoami): NO"
+fi
+exit 0

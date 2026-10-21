@@ -264,6 +264,6 @@ fi
 cd $EXPDIR
 
 step "setup.sh finished"
-"$EXPDIR/scripts/setup_report.sh"
+"$EXPDIR/scripts/setup_report.sh" || echo "### (setup_report.sh failed; the install itself finished)"
 echo
 echo "### log: $SETUP_LOG"

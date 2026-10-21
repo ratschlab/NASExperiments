@@ -25,7 +25,6 @@ PACKAGES="build-essential git cmake make pkg-config autoconf automake libtool ge
   libssl-dev libcurl4-openssl-dev zlib1g-dev"
 # packages that must not change as a side effect
 PROTECTED='^(ont-|minknow|nvidia|libnvidia|cuda|linux-image|linux-headers|linux-modules)'
-SOCKET=/var/lib/minknow/data/.dorado/dorado-basecall-server.sock
 DORADO=/opt/ont/dorado/bin/dorado_basecall_server
 
 usage() {
@@ -88,7 +87,11 @@ if [ -x "$DORADO" ]; then
 else
     warn "$DORADO not found"
 fi
-if [ -S "$SOCKET" ]; then
+source "$EXPDIR/scripts/gridion_common.sh"
+ADDRESS=$(dorado_address)
+echo "running server listens on: ${ADDRESS:-no dorado_basecall_server running}"
+SOCKET=${ADDRESS#ipc://}
+if [[ "$ADDRESS" == ipc://* ]] && [ -S "$SOCKET" ]; then
     ls -la "$SOCKET"
     if [ -w "$SOCKET" ]; then
         echo "socket writable by $(whoami): yes"
@@ -96,7 +99,7 @@ if [ -S "$SOCKET" ]; then
         warn "socket not writable by $(whoami) (groups: $(id -nG))"
     fi
 else
-    warn "basecall socket $SOCKET not found (is MinKNOW running?)"
+    warn "no basecall socket found (is MinKNOW running?); sites/*.env will fall back to the standalone MinKNOW path"
 fi
 
 # --- Automatic updates ---

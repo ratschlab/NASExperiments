@@ -10,7 +10,7 @@ Benchmarking harness for **selective (adaptive) nanopore sequencing**: it compar
 
 Upstream (Sayan) runs **in-silico benchmarks**. This fork is for **deploying the decision algorithms on an ONT GridION (Ubuntu 24.04) and running them on real data**. This checkout (`/scratch/NASExperiments_grlab`) is the development copy on a separate Linux server. The final checkout lives on the GridION, so:
 - Configs and scripts must not depend on `/scratch/...` paths or on this server's layout.
-- On the GridION, MinKNOW manages the dorado basecall server at `ipc:///var/lib/minknow/data/.dorado/dorado-basecall-server.sock`. `/tmp/.dorado/...` is only the dev server's local server.
+- MinKNOW manages the dorado basecall server, but its socket path differs: `/var/lib/minknow/data/.dorado/dorado-basecall-server.sock` on standalone MinKNOW (the dev server), and not there on the GridION (the 2026-03 GridION configs used `ipc:///tmp/.dorado/dorado-basecall-server.sock`). `sites/*.env` therefore take `BASECALL_ADDRESS` from the running `dorado_basecall_server`'s `--port` (`dorado_address` in `scripts/gridion_common.sh`), falling back to the standalone path. `prep_gridion.sh` and `setup_report.sh` print the detected address.
 - Real runs talk to a live MinKNOW, not `MinknoApiSimulator`, so the simulator-only `MINKNOW_SIMULATOR`/cert env vars don't apply.
 - Ubuntu 24.04 ships GCC 13 (hence the spumoni header fixes in `setup.sh`) and needs `libboost-all-dev` via apt for the metagraph CLI.
 - Never modify Sayan's checkout `/scratch/NASExperiments`; only read from it as the `upstream` remote.
