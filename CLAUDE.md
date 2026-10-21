@@ -131,3 +131,17 @@ Config naming: `rf_<tool>_<dataset>.toml` (`mm`=mappy_rs, `cl`=collinearity, `mg
 ## Ad-hoc utilities
 
 `tools/run.py <function> key=value ...` dispatches to `basecall` (`tools/basecall.py`, BLOW5 to FASTA via the dorado server) and `truncate_signal` (`tools/utils.py`).
+
+## Status and next steps (as of 2026-10-21)
+
+**GridION** (host GXB03789, user `grid`, repo `/home/grid/NASExperiments`, conda env `selectiveseq_v2`; 16 cores, 62 GB RAM, ~60 GB disk; sequencing positions X1–X5, normally X1). Basecall server: MinKNOW's dorado 7.13.6 at `ipc:///home/grid/.dorado/dorado-basecall-server.sock` (detected automatically).
+
+Done:
+- Fresh `setup.sh` install (19 min, no simulation tools), HXB2 references and check samples copied over (`data/refs/HXB2`, `data/check/`), indices built in `tmp/hxb2/`.
+- `scripts/check_tools.sh --sample data/check/hxb2.blow5` passes for all tools on the GridION (`runs/check_20261021_105124`, matching the dev server within ±10 reads). HXB2_IN kept / others ejected out of 1000 / 2000 at 1.2 s: mm 601/1905, mg_local 605/1902, mg 171/1985, sp 679/1890, rb 809/1846, cl 388/1943, rh 178/1906. sg keeps everything and is not usable for HXB2.
+- Per read on the GridION: basecalling ~0.7 ms; mapping mg 0.20 ms, rh 0.05 ms, the others ≤ 0.024 ms.
+
+Next:
+1. **Dry runs on a real HXB2 sequencing run** (being set up with the experimentalists): `scripts/run_gridion.sh -t <tool> -d X1 -n hxb2_<tool>_dryrun --dry-run`. Order: mm (March baseline), mg_local (new candidate), mg (March metagraphRF setup), then sp/rb/cl/rh; leave out sg. A few minutes per tool are enough to check the mechanics. Then analyse `runs/<timestamp>_<tool>_X1/`: region split (target/control halves), decision latency (`seq_len` and chunks at decision), and decisions on target reads compared with the March runs (`/data/uzh_ont/2026_03`; mm live: 57.9% of HXB2_IN kept).
+2. Live (unblocking) runs per tool after the dry runs look right.
+3. Open: Sigmoni on R10 (R9 binning model); review and merge of metagraph `ak/pymetagraph-query` and metagraphRF `ak/local-backend` (Andre syncs with Sayan); optional `scripts/cleanup_install.sh --caches` on the GridION.
