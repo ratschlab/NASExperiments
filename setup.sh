@@ -226,11 +226,17 @@ pip install "setuptools<81" uncalled4   # ont_fast5_api needs pkg_resources
 pip install -e .
 
 step "seq2squiggle"
-# setup seq2squiggle
+# setup seq2squiggle (signal simulation only, not needed for live runs on a GridION;
+# pulls in torch with CUDA wheels, several GB, and pins numpy ^1.26;
+# skip with SKIP_SEQ2SQUIGGLE=1)
 cd $EXPDIR/code
-[ -d seq2squiggle ] || git clone https://github.com/ZKI-PH-ImageAnalysis/seq2squiggle.git
-cd seq2squiggle
-pip install .
+if [ "${SKIP_SEQ2SQUIGGLE:-0}" = 1 ]; then
+    echo "SKIP_SEQ2SQUIGGLE=1, skipping."
+else
+    [ -d seq2squiggle ] || git clone https://github.com/ZKI-PH-ImageAnalysis/seq2squiggle.git
+    cd seq2squiggle
+    pip install .
+fi
 
 step "MinKNOW API simulator"
 # Setup Minknow API Simulator (only for simulated runs, not needed for live runs

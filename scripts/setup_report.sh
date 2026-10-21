@@ -53,7 +53,7 @@ echo "metagraph (code/): $("$CODE/metagraph/metagraph/build/metagraph" --version
 
 section "Python packages"
 for p in readfish ont-pybasecall-client-lib metagraph-api metagraphRF pymetagraph pyspumoni pyrawhash \
-         pyreadbouncer pycollinearity sigmoni uncalled4 mappy-rs seq2squiggle mksim setuptools; do
+         pyreadbouncer pycollinearity sigmoni uncalled4 mappy-rs seq2squiggle torch mksim numpy pysam setuptools; do
     printf '%-28s %s\n' "$p" "$(pip show "$p" 2>/dev/null | awk '/^Version:/{print $2}')"
 done | sed 's/ $/ MISSING/'
 
