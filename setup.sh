@@ -46,26 +46,32 @@ else
     echo "collinearity already installed, skipping."
 fi
 
-# setup metagraphRF (server-based readfish plugin, uses conda metagraph)
+# setup metagraphRF: readfish plugin with a server backend (a `metagraph server_query`
+# from conda metagraph 0.5.1) and a local backend (in-process pymetagraph, built below)
 cd $EXPDIR/code
-if ! pip show metagraphRF &> /dev/null
-then
-    conda install -c bioconda -c conda-forge metagraph=0.5.1
-    [ -d metagraphRF ] || git clone https://github.com/ratschlab/metagraphRF
-    cd metagraphRF
-    pip show metagraphRF &>/dev/null || pip install .
+[ -x "$CONDA_PREFIX/bin/metagraph" ] \
+    || conda install -y -c bioconda -c conda-forge metagraph=0.5.1
+[ -d metagraphRF ] || git clone -b ak/local-backend https://github.com/ratschlab/metagraphRF
+cd metagraphRF
+if [ "$(git branch --show-current)" != "ak/local-backend" ]; then
+    echo "WARNING: code/metagraphRF is on '$(git branch --show-current)', not ak/local-backend;" >&2
+    echo "         backend = \"local\" needs that branch." >&2
+fi
+if ! python -c "from metagraphRF.aligner import Aligner; Aligner._init_local" &>/dev/null; then
+    pip install .
 else
-    echo "metagraphRF module found, skipping."
+    echo "metagraphRF with local backend found, skipping."
 fi
 
-# build metagraph from sg/readfish-bindings branch
+# build metagraph (CLI for index building + pymetagraph bindings) from the
+# ak/pymetagraph-query branch (master + query-only pymetagraph)
 # From https://metagraph.ethz.ch/static/docs/installation.html#install-from-source
 cd $EXPDIR/code
-[ -d metagraph ] || git clone -b sg/readfish-bindings --recursive https://github.com/ratschlab/metagraph.git
+[ -d metagraph ] || git clone -b ak/pymetagraph-query --recursive https://github.com/ratschlab/metagraph.git
 cd metagraph
-if [ "$(git branch --show-current)" != "sg/readfish-bindings" ]; then
-    echo "WARNING: code/metagraph is on '$(git branch --show-current)', not sg/readfish-bindings;" >&2
-    echo "         pymetagraph needs that branch (git -C code/metagraph checkout sg/readfish-bindings)." >&2
+if [ "$(git branch --show-current)" != "ak/pymetagraph-query" ]; then
+    echo "WARNING: code/metagraph is on '$(git branch --show-current)', not ak/pymetagraph-query;" >&2
+    echo "         pymetagraph needs that branch (git -C code/metagraph checkout ak/pymetagraph-query)." >&2
 fi
 git submodule update --init --recursive
 
@@ -116,11 +122,11 @@ else
   echo "         (pymetagraph python bindings will still be installed below.)" >&2
 fi
 
-# pymetagraph python bindings (readfish-compatible aligner plugin)
-# Separate cmake invocation via scikit-build-core with -DBUILD_PYTHON_BINDINGS=ON,
-# which switches metagraph's CMakeLists.txt to shared Boost libs, so the static-lib
-# workaround above isn't needed here.
-if ! pip show pymetagraph &>/dev/null; then
+# pymetagraph python bindings (in-process label queries, used by metagraphRF's
+# local backend). Separate cmake invocation via scikit-build-core with
+# -DBUILD_PYTHON_BINDINGS=ON, which switches metagraph's CMakeLists.txt to shared
+# Boost libs. Reinstalled if an older pymetagraph (no AnnotatedGraph) is present.
+if ! python -c "import pymetagraph; pymetagraph.AnnotatedGraph" &>/dev/null; then
     cd $EXPDIR/code/metagraph/metagraph/api/python/pymetagraph
     # a failed earlier attempt leaves a CMake cache pointing at pip's deleted build env
     rm -rf build
