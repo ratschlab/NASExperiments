@@ -52,13 +52,14 @@ conda env create -f env.yml && conda activate selectiveseq
 
 - Metagraph's CLI build needs system static Boost (`libboost-all-dev`). Conda Boost is not enough.
 - Build gotchas, all handled in `setup.sh` / `build_experiment_indices.sh`:
-  - metagraph needs its bundled sdsl-lite installed first, built with `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` (pymetagraph's `.so` needs PIC). Remove `sdsl-lite/include/gtest` afterwards.
+  - On master, metagraph builds sdsl-lite itself (`add_subdirectory`); the old branches needed it pre-installed with `-DCMAKE_POSITION_INDEPENDENT_CODE=ON`.
   - pymetagraph needs `CMAKE_ARGS="-DBoost_DIR=..."` pointing at the system Boost. Delete `api/python/pymetagraph/build/` after a failed attempt, because its cache points at pip's deleted build env.
   - Sigmoni must be installed editable (`pip install -e .`), because it loads pore models from `<source>/poremodel/`.
   - Sigmoni's dependency `ont_fast5_api` needs `setuptools<81` (`pkg_resources`).
   - Sigmoni needs spumoni ≥ `fcaa6c5` (`get_pml_batch`).
   - RawHash needs its `cmake` branch (R10.4.1 k-mer model).
 - The skip-if-built guards in `setup.sh` never update an existing checkout, so pull and rebuild by hand when a tool's upstream changes.
+- `setup.sh` tees its output to `logs/setup_<timestamp>.log`, marks each tool with a timestamped `###` step line, reports the failing line on error, and ends with `scripts/setup_report.sh`. That read-only script reports host, branch and commit per tool, binaries, Python package versions and plugin imports; run it any time to diagnose an install.
 - metagraph graphs are built by the `code/metagraph` binary (`metagraph/build/metagraph`, first on `task_runner.sh`'s PATH). The server backend uses conda's 0.5.1 `server_query`, and the local backend uses pymetagraph built from the same `code/metagraph` checkout. The old `sg/readfish-bindings` pymetagraph could not read annotations written by 0.5.1 ("can't load label encoder"); the master-based one reads graphs built by 0.4.5 and 0.5.x.
 - `build_experiment_indices.sh` re-wraps `REF` into `$INDEX_DIR/ref/` because pysam (and so Sigmoni) rejects FASTAs with uneven line lengths, such as `HXB2_IN.fasta`.
 - `ont-dorado-server` is not installed by `setup.sh`. It is extracted manually into `code/ont-dorado-server/`, and `run_dorado_v0.7.4.sh` starts it locally.

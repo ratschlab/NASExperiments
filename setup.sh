@@ -5,6 +5,15 @@ set -e
 export EXPDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $EXPDIR
 
+# Keep a full log of this run (and a state report at the end, see
+# scripts/setup_report.sh) under logs/
+mkdir -p logs
+SETUP_LOG=$EXPDIR/logs/setup_$(date +%Y%m%d_%H%M%S).log
+exec > >(tee -a "$SETUP_LOG") 2>&1
+trap 'echo "### setup.sh FAILED at line $LINENO (exit $?): $BASH_COMMAND"; echo "### log: $SETUP_LOG"' ERR
+step() { echo; echo "### $(date '+%F %T') $*"; }
+step "setup.sh started in $EXPDIR (env: ${CONDA_DEFAULT_ENV:-none}, commit $(git -C "$EXPDIR" rev-parse --short HEAD 2>/dev/null))"
+
 # Parallel build jobs: one per core, but at most one per 4 GB of available RAM,
 # since metagraph's compile jobs need 2-4 GB each. Override with JOBS=<n>.
 if [ -z "${JOBS:-}" ]; then
@@ -19,6 +28,7 @@ echo "Building with $JOBS parallel jobs"
 # Create directory structure
 mkdir -p code log logs out results tmp
 
+step "minimap2"
 # setup minimap2
 cd $EXPDIR/code
 if [ ! -f minimap2/minimap2 ]; then
@@ -28,6 +38,7 @@ else
     echo "minimap2 binary found, skipping."
 fi
 
+step "TurboPFor"
 # setup TurboPFor (required by collinearity)
 cd $EXPDIR/code
 if [ ! -f TurboPFor-Integer-Compression/libic.a ]; then
@@ -38,6 +49,7 @@ else
 fi
 TURBOPFOR_DIR=$EXPDIR/code/TurboPFor-Integer-Compression
 
+step "collinearity"
 # setup collinearity
 cd $EXPDIR/code
 if ! pip show collinearity &>/dev/null || [ ! -f collinearity/build/Collinearity ]; then
@@ -57,6 +69,7 @@ else
     echo "collinearity already installed, skipping."
 fi
 
+step "metagraphRF"
 # setup metagraphRF: readfish plugin with a server backend (a `metagraph server_query`
 # from conda metagraph 0.5.1) and a local backend (in-process pymetagraph, built below)
 cd $EXPDIR/code
@@ -74,6 +87,7 @@ else
     echo "metagraphRF with local backend found, skipping."
 fi
 
+step "metagraph CLI"
 # build metagraph (CLI for index building + pymetagraph bindings) from the
 # ak/pymetagraph-query branch (master + query-only pymetagraph)
 # From https://metagraph.ethz.ch/static/docs/installation.html#install-from-source
@@ -86,18 +100,8 @@ if [ "$(git branch --show-current)" != "ak/pymetagraph-query" ]; then
 fi
 git submodule update --init --recursive
 
-# sdsl-lite is not built by metagraph's CMake project; it must be installed into
-# external-libraries/sdsl-lite first. Build it position-independent, which the
-# pymetagraph .so needs and which also links fine into the static CLI binary.
-if [ ! -f metagraph/external-libraries/sdsl-lite/lib/libsdsl.a ]; then
-    cd metagraph/external-libraries/sdsl-lite
-    mkdir -p build && cd build
-    cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX=$(cd .. && pwd) ..
-    make -j $JOBS && make install
-    cd $EXPDIR/code/metagraph
-fi
-# sdsl's install ships an old gtest that breaks metagraph's unit_tests build
-rm -rf metagraph/external-libraries/sdsl-lite/include/gtest
+# (sdsl-lite is built by metagraph's own CMake project on master, position-independent
+# when building the python bindings; no separate install step needed)
 
 mkdir -p metagraph/build
 cd metagraph/build
@@ -133,6 +137,7 @@ else
   echo "         (pymetagraph python bindings will still be installed below.)" >&2
 fi
 
+step "pymetagraph"
 # pymetagraph python bindings (in-process label queries, used by metagraphRF's
 # local backend). Separate cmake invocation via scikit-build-core with
 # -DBUILD_PYTHON_BINDINGS=ON, which switches metagraph's CMakeLists.txt to shared
@@ -151,6 +156,7 @@ else
     echo "pymetagraph already installed, skipping."
 fi
 
+step "spumoni"
 # setup spumoni
 cd $EXPDIR/code
 if [ ! -f spumoni/build/spumoni ]; then
@@ -178,9 +184,10 @@ else
     echo "spumoni already installed, skipping."
 fi
 
+step "rawhash"
 # setup rawhash
 cd $EXPDIR/code
-if [ ! -f rawhash2/build/rawhash2 ]; then
+if [ ! -f rawhash2/rawhash2 ]; then
     [ -d rawhash2 ] || git clone -b cmake --recursive https://github.com/ratschlab/RawHash.git rawhash2
     cd rawhash2
     git submodule update --init --recursive
@@ -194,6 +201,7 @@ else
     echo "rawhash2 binary found, skipping."
 fi
 
+step "ReadBouncer"
 # setup ReadBouncer
 cd $EXPDIR/code
 [ -d ReadBouncer ] || git clone --recursive https://github.com/ratschlab/ReadBouncer.git
@@ -207,6 +215,7 @@ make -j $JOBS
 cd $EXPDIR/code/ReadBouncer
 pip install .
 
+step "sigmoni"
 # setup sigmoni
 # requires SPUMONI (built above) and Uncalled4
 cd $EXPDIR/code
@@ -216,15 +225,17 @@ pip install "setuptools<81" uncalled4   # ont_fast5_api needs pkg_resources
 # editable: sigmoni loads its pore models from <source>/poremodel/
 pip install -e .
 
+step "seq2squiggle"
 # setup seq2squiggle
 cd $EXPDIR/code
 [ -d seq2squiggle ] || git clone https://github.com/ZKI-PH-ImageAnalysis/seq2squiggle.git
 cd seq2squiggle
 pip install .
 
+step "MinKNOW API simulator"
 # Setup Minknow API Simulator
 cd $EXPDIR/code
-if ! pip show minknow-api-simulator &>/dev/null; then
+if ! pip show mksim &>/dev/null; then
     [ -d MinknoApiSimulator ] || git clone https://github.com/ratschlab/MinknoApiSimulator.git
     cd MinknoApiSimulator/certs
     ./generate.sh
@@ -242,3 +253,8 @@ fi
 # client/server version compatibility.
 
 cd $EXPDIR
+
+step "setup.sh finished"
+"$EXPDIR/scripts/setup_report.sh"
+echo
+echo "### log: $SETUP_LOG"
