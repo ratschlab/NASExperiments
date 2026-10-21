@@ -5,6 +5,17 @@ set -e
 export EXPDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $EXPDIR
 
+# Parallel build jobs: one per core, but at most one per 4 GB of available RAM,
+# since metagraph's compile jobs need 2-4 GB each. Override with JOBS=<n>.
+if [ -z "${JOBS:-}" ]; then
+    JOBS=$(awk '/^MemAvailable:/ {print int($2 / 1024 / 1024 / 4)}' /proc/meminfo)
+    if [ "$JOBS" -gt "$(nproc)" ]; then JOBS=$(nproc); fi
+    if [ "$JOBS" -lt 1 ]; then JOBS=1; fi
+fi
+# also used by the pip/scikit-build-core builds (pymetagraph)
+export CMAKE_BUILD_PARALLEL_LEVEL=$JOBS
+echo "Building with $JOBS parallel jobs"
+
 # Create directory structure
 mkdir -p code log logs out results tmp
 
@@ -12,7 +23,7 @@ mkdir -p code log logs out results tmp
 cd $EXPDIR/code
 if [ ! -f minimap2/minimap2 ]; then
     [ -d minimap2 ] || git clone https://github.com/lh3/minimap2.git
-    cd minimap2 && make -j8
+    cd minimap2 && make -j $JOBS
 else
     echo "minimap2 binary found, skipping."
 fi
@@ -21,7 +32,7 @@ fi
 cd $EXPDIR/code
 if [ ! -f TurboPFor-Integer-Compression/libic.a ]; then
     [ -d TurboPFor-Integer-Compression ] || git clone https://github.com/powturbo/TurboPFor-Integer-Compression.git
-    cd TurboPFor-Integer-Compression && make -j8
+    cd TurboPFor-Integer-Compression && make -j $JOBS
 else
     echo "TurboPFor already built, skipping."
 fi
@@ -40,7 +51,7 @@ if ! pip show collinearity &>/dev/null || [ ! -f collinearity/build/Collinearity
     if [ ! -f build/Collinearity ]; then
         mkdir -p build && cd build
         cmake ..
-        make -j 8
+        make -j $JOBS
     fi
 else
     echo "collinearity already installed, skipping."
@@ -82,7 +93,7 @@ if [ ! -f metagraph/external-libraries/sdsl-lite/lib/libsdsl.a ]; then
     cd metagraph/external-libraries/sdsl-lite
     mkdir -p build && cd build
     cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX=$(cd .. && pwd) ..
-    make -j 16 && make install
+    make -j $JOBS && make install
     cd $EXPDIR/code/metagraph
 fi
 # sdsl's install ships an old gtest that breaks metagraph's unit_tests build
@@ -113,7 +124,7 @@ if [ -f metagraph_DNA ]; then
   echo "metagraph binary found, skipping."
 elif [ -n "$BOOST_DIR" ] && [ -n "$BOOST_IOSTREAMS_DIR" ]; then
   cmake -DBoost_DIR="$BOOST_DIR" -Dboost_iostreams_DIR="$BOOST_IOSTREAMS_DIR" ..
-  make -j 16 metagraph
+  make -j $JOBS metagraph
 else
   echo "WARNING: skipping the metagraph CLI/server build -- could not find or" >&2
   echo "         install a system Boost with static libs (libboost-all-dev)." >&2
@@ -155,7 +166,7 @@ if [ ! -f spumoni/build/spumoni ]; then
     grep -q "<utility>" _deps/shaped_slp-src/external/sux/sux/util/Vector.hpp || \
         sed -i 's/#include <sys\/mman.h>/#include <sys\/mman.h>\n#include <utility>/' \
             _deps/shaped_slp-src/external/sux/sux/util/Vector.hpp
-    make -j 16
+    make -j $JOBS
     make install
     cd ..
 fi
@@ -175,7 +186,7 @@ if [ ! -f rawhash2/build/rawhash2 ]; then
     git submodule update --init --recursive
     mkdir -p build && cd build
     cmake NOHDF5=1 NOPOD5=1 ..
-    make -j 8
+    make -j $JOBS
     # for python bindings
     cd ..
     pip show rawhash2 &>/dev/null || pip install .
@@ -190,7 +201,7 @@ cd ReadBouncer
 git submodule update --init --recursive
 mkdir -p build && cd build
 cmake ../src
-make -j 8
+make -j $JOBS
 
 # pyreadbouncer python bindings
 cd $EXPDIR/code/ReadBouncer
