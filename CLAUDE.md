@@ -92,6 +92,8 @@ conda activate selectiveseq
 scripts/run_gridion.sh -t mm -d X1 -n hxb2_mm_run1 [--dry-run] [-s sites/dev.env] [-e experiments/hxb2.env] [-- <readfish targets args>]
 ```
 
+To prepare a fresh GridION, run `scripts/prep_gridion.sh` first. With no options it only reports: it records the ONT/MinKNOW/NVIDIA package versions, shows cores/RAM/disk/cmake, the dorado version and socket access, and the unattended-upgrades origins, and dry-runs the apt build prerequisites, flagging any ont-*/MinKNOW/NVIDIA/kernel package apt would touch. `--install` installs the prerequisites only if that dry run is clean, `--hold` runs `apt-mark hold` on the ONT/NVIDIA packages, and `--env <name>` creates the conda env from `env.yml`. Never run `apt upgrade` there: MinKNOW, the dorado server and the GPU driver are apt packages, and a dorado server update breaks the pinned client.
+
 `-t` is one of `mm mg mg_local sp sg rh rb cl`. The script works through these steps:
 1. Renders the site's configs.
 2. Creates `runs/<timestamp>_<tool>_<device>/` (gitignored). It holds the config used, `run_info.txt` (commit, readfish version), the readfish logs, and the chunk-log TSV that readfish writes to the current working directory.
