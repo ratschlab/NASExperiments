@@ -196,7 +196,7 @@ if [ ! -f rawhash2/rawhash2 ]; then
     make -j $JOBS
     # for python bindings
     cd ..
-    pip show pyrawhash2 &>/dev/null || pip install .
+    pip show pyrawhash &>/dev/null || pip install .
 else
     echo "rawhash2 binary found, skipping."
 fi
