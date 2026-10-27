@@ -28,7 +28,7 @@ echo "python: $(python --version 2>&1)   $(command -v python)"
 echo "conda metagraph (server backend): $("${CONDA_PREFIX:-/nonexistent}/bin/metagraph" --version 2>/dev/null | head -1 || echo missing)"
 
 section "Tool checkouts (code/)"
-for d in minimap2 TurboPFor-Integer-Compression collinearity metagraph metagraphRF spumoni rawhash2 \
+for d in minimap2 TurboPFor-Integer-Compression collinearity metagraph metagraphRF spumoni rawhash2 cumin \
          ReadBouncer sigmoni seq2squiggle MinknoApiSimulator; do
     if [ -d "$CODE/$d/.git" ] || [ -f "$CODE/$d/.git" ]; then
         g="git -C $CODE/$d -c submodule.recurse=false"
@@ -42,7 +42,7 @@ done
 
 section "Binaries"
 for b in minimap2/minimap2 collinearity/build/Collinearity metagraph/metagraph/build/metagraph \
-         spumoni/build/spumoni rawhash2/rawhash2 ReadBouncer/build/main/ReadBouncer; do
+         spumoni/build/spumoni rawhash2/rawhash2 ReadBouncer/build/main/ReadBouncer cumin/build/cumin; do
     if [ -x "$CODE/$b" ]; then
         printf '%-40s ok   %s\n' "$b" "$(stat -c %y "$CODE/$b" | cut -d. -f1)"
     else
@@ -53,13 +53,13 @@ echo "metagraph (code/): $("$CODE/metagraph/metagraph/build/metagraph" --version
 
 section "Python packages"
 for p in readfish ont-pybasecall-client-lib metagraph-api metagraphRF pymetagraph pyspumoni pyrawhash \
-         pyreadbouncer pycollinearity sigmoni uncalled4 mappy-rs seq2squiggle torch mksim numpy pysam setuptools; do
+         pyreadbouncer pycollinearity pycumin sigmoni uncalled4 mappy-rs seq2squiggle torch mksim numpy pysam setuptools; do
     printf '%-28s %s\n' "$p" "$(pip show "$p" 2>/dev/null | awk '/^Version:/{print $2}')"
 done | sed 's/ $/ MISSING/'
 
 section "Plugin imports"
 cd /tmp
-for m in readfish.plugins.mappy_rs metagraphRF pymetagraph pyspumoni sigmoni pyrawhash pyreadbouncer pycollinearity; do
+for m in readfish.plugins.mappy_rs metagraphRF pymetagraph pyspumoni sigmoni pyrawhash pyreadbouncer pycollinearity pycumin; do
     if r=$(timeout 120 python -c "import $m" 2>&1); then
         printf '%-28s ok\n' "$m"
     else

@@ -52,6 +52,7 @@ export PATH=$CODEDIR/metagraph/metagraph/build/:$PATH
 export SPUMONI_BUILD_DIR=$CODEDIR/spumoni/build/
 export PATH=$SPUMONI_BUILD_DIR:$PATH
 export PATH=$CODEDIR/ReadBouncer/build/main/:$PATH
+export PATH=$CODEDIR/cumin/build/:$PATH
 export TIMESTAMP=$(date +"%b%d_%H%M%S")
 # alias measure="/usr/bin/time -f \"CPU=%P\nElapsed=%E\nMaxRSS=%M KB\""
 

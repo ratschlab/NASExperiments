@@ -2,7 +2,7 @@
 
 # --- List of all tasks to run by default ---
 # This variable is used by the main script when no numbers are specified.
-export ALL_TASKS="1-7"
+export ALL_TASKS="1-8"
 
 source "$SCRIPTDIR/build_common.sh"
 
@@ -56,4 +56,9 @@ f7() {
     measure sigmoni-index -p $REF \
         -o $OUTDIR/sg --spumoni-path $SPUMONI_BUILD_DIR \
         --poremodel $CODEDIR/sigmoni/poremodel/model_r1041_400bps_dm_it2.tsv
+}
+
+f8() {
+    build_start cn "Building Cumin index for Zymo.."
+    measure cumin build --ref $REF --idx $OUTDIR/cn/zymo.idx
 }

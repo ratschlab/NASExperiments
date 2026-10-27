@@ -20,7 +20,7 @@
 #
 set -uo pipefail
 
-ALL_TOOLS="mm mg mg_local sp sg rh rb cl"
+ALL_TOOLS="mm mg mg_local sp sg rh rb cl cn"
 # tools that work on raw signal and need no basecalling for step 4
 RAW_TOOLS="rh sg"
 

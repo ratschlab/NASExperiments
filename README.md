@@ -25,7 +25,7 @@
 
 In the `experiments` folder, so the following:
 
-1. Create a script (say `my_tasks.sh`) as follows. Use the variables `OUTDIR` for output files and `TMPDIR` for temporary files. This script will be imported by another script (`task_runner.sh`) and these variables would be defined in it. The functions should be called `fn` (n = 1, 2, 3, ...) and define `ALL_TASKS="1-n"`. Collinearity, Metagraph, Spumoni, and Rawhash executable paths are all exported in `task_runner.sh`.
+1. Create a script (say `my_tasks.sh`) as follows. Use the variables `OUTDIR` for output files and `TMPDIR` for temporary files. This script will be imported by another script (`task_runner.sh`) and these variables would be defined in it. The functions should be called `fn` (n = 1, 2, 3, ...) and define `ALL_TASKS="1-n"`. Collinearity, Metagraph, Spumoni, Rawhash, ReadBouncer and Cumin executable paths are all exported in `task_runner.sh`.
 	
 ```bash
 ALL_TASKS="1-3"

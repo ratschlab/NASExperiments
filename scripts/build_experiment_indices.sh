@@ -3,11 +3,11 @@
 # Build all decision-algorithm indices for one experiment into
 # $INDEX_DIR/<tool>/, the layout configs/templates/ expect.
 #
-#   EXPERIMENT=experiments/hxb2.env [SITE=sites/dev.env] scripts/task_runner.sh -t build_experiment_indices [1-7]
+#   EXPERIMENT=experiments/hxb2.env [SITE=sites/dev.env] scripts/task_runner.sh -t build_experiment_indices [1-8]
 #
 
 # --- List of all tasks to run by default ---
-export ALL_TASKS="1-7"
+export ALL_TASKS="1-8"
 
 source "$SCRIPTDIR/build_common.sh"
 
@@ -70,4 +70,9 @@ f7() {
     measure sigmoni-index -p $REF \
         -o $OUTDIR/sg --spumoni-path $SPUMONI_BUILD_DIR \
         --poremodel $CODEDIR/sigmoni/poremodel/model_r1041_400bps_dm_it2.tsv
+}
+
+f8() {
+    build_start cn "Building Cumin index for $DATASET.."
+    measure cumin build --ref $REF --idx $OUTDIR/cn/$DATASET.idx
 }

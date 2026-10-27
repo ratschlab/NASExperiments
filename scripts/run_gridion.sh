@@ -12,7 +12,7 @@
 #
 set -euo pipefail
 
-TOOLS="mm mg mg_local sp sg rh rb cl"
+TOOLS="mm mg mg_local sp sg rh rb cl cn"
 
 usage() {
     echo "Usage: $0 -t <tool> -d <device> -n <experiment_name> [options] [-- <readfish args>]"

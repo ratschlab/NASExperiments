@@ -2,7 +2,7 @@
 
 # --- List of all tasks to run by default ---
 # This variable is used by the main script when no numbers are specified.
-export ALL_TASKS="1-8"
+export ALL_TASKS="1-9"
 
 source "$SCRIPTDIR/bench_common.sh"
 
@@ -128,4 +128,15 @@ f8() {
     complexity=true"
 
     run_benchmark sigmoni "$pl_args" sigmoni "$DATASET_LABEL" --no-basecall --max-batches 100
+}
+
+f9() {
+    require_signal_length || return 1
+    echo "Benchmarking cumin for Gut (d=0.1) with signal length $SIGNAL_LENGTH .."
+
+    pl_args="\
+    input=$INDIR/cn/gutd0.1.idx \
+    n_threads=$NUM_THREADS"
+
+    run_benchmark pycumin "$pl_args" cumin "$DATASET_LABEL"
 }

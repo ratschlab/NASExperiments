@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-Benchmarking harness for **selective (adaptive) nanopore sequencing**: it compares read classifiers (minimap2/mappy_rs, Collinearity, Metagraph, SPUMONI, Sigmoni, RawHash2, ReadBouncer) used as [readfish](https://github.com/LooseLab/readfish) aligner plugins, on simulated Zymo and Gut datasets that live under `/data/SimulatedDatasets/`. There is no build system, test suite or linter. The repo is bash task scripts, Python analysis scripts and readfish TOML configs. External tools are cloned and built into `code/` by `setup.sh`.
+Benchmarking harness for **selective (adaptive) nanopore sequencing**: it compares read classifiers (minimap2/mappy_rs, Collinearity, Metagraph, SPUMONI, Sigmoni, RawHash2, ReadBouncer, Cumin) used as [readfish](https://github.com/LooseLab/readfish) aligner plugins, on simulated Zymo and Gut datasets that live under `/data/SimulatedDatasets/`. There is no build system, test suite or linter. The repo is bash task scripts, Python analysis scripts and readfish TOML configs. External tools are cloned and built into `code/` by `setup.sh`.
 
 ## Purpose of this fork
 
@@ -40,7 +40,7 @@ EXPERIMENT=$PWD/experiments/hxb2.env SITE=$PWD/sites/dev.env scripts/task_runner
 - `experiments/<name>.env` describes the biology: `DATASET`, the reference `REF` that indices are built from, and `TARGETS` (a TOML list of the target region's contigs). `experiments/hxb2.env` is the HIV HXB2 amplicon experiment: enrich HXB2_IN, with HXB2_PRRT as the off-target amplicon.
 - `sites/<machine>.env` describes the machine: the basecall socket and model, `THREADS`, `CODE_DIR`, `INDEX_DIR`, `RB_IBF`, `MG_SERVER_PORT`/`MG_GRAPH`/`MG_ANNO` and `REGIONS`. The experiment file is sourced first, so the site file can use `DATASET`/`REF`. Both are bash files sourced with `EXPDIR` set to the repo root, and their values use `: ${VAR:=default}`, so environment variables override them.
 - The renderer only substitutes the `${VAR}`s that appear in a template, and it fails if any of them is unset. `configs/generated/` is gitignored.
-- `INDEX_DIR` follows the layout written by `build_experiment_indices.sh` (and upstream's `build_all_<dataset>_indices.sh`): `<INDEX_DIR>/<tool>/<DATASET>.*` (`mm/hxb2.mmi`, `cl/hxb2.cidx`, `mg/hxb2.dbg`, `sp/hxb2`, `rh/hxb2.ind`, `sg/refs/ref`, `rb/<REF basename>.ibf`). The Collinearity index is about 4.3 GB even for the 1.4 kb HXB2_IN reference.
+- `INDEX_DIR` follows the layout written by `build_experiment_indices.sh` (and upstream's `build_all_<dataset>_indices.sh`): `<INDEX_DIR>/<tool>/<DATASET>.*` (`mm/hxb2.mmi`, `cl/hxb2.cidx`, `mg/hxb2.dbg`, `sp/hxb2`, `rh/hxb2.ind`, `sg/refs/ref`, `rb/<REF basename>.ibf`, `cn/hxb2.idx`). The Collinearity index is about 4.3 GB even for the 1.4 kb HXB2_IN reference.
 - readfish semantics: with `targets = []`, every mapped read counts as *off*-target (`Targets.check_coord` is always False). So `*_off` decides what happens to mapped reads and `no_map` decides unmapped ones.
 
 ## Setup
@@ -58,6 +58,7 @@ conda env create -f env.yml && conda activate selectiveseq
   - Sigmoni's dependency `ont_fast5_api` needs `setuptools<81` (`pkg_resources`).
   - Sigmoni needs spumoni ≥ `fcaa6c5` (`get_pml_batch`).
   - RawHash needs its `cmake` branch (R10.4.1 k-mer model).
+  - Cumin (`sayangoswami/cumin`, open-syncmer based, maps basecalled reads) is built with cmake into `code/cumin/build/` (on `task_runner.sh`'s PATH) and its readfish plugin `pycumin` is installed with `pip install .`. Indices are built with `cumin build --ref <fasta> --idx <out>.idx` (task f8 of the `build_*` scripts) and benchmarked as task f9 of the `benchmark_all_*` scripts. Unlike the other tools, the setup step has no skip-if-built guard, so it rebuilds on every `setup.sh` run.
 - The skip-if-built guards in `setup.sh` never update an existing checkout, so pull and rebuild by hand when a tool's upstream changes.
 - Simulation tools are opt-in: `WITH_SIMULATION=1 ./setup.sh` also installs seq2squiggle (signal simulation; brings torch with CUDA wheels, about 5 GB, and pins numpy ^1.26) and the MinKNOW API simulator (`mksim`, used by `run_server.sh`, `run_readfish.sh` and `scripts/simulate_run.sh`). Neither is needed for live GridION runs or `check_tools.sh`. `JOBS=<n>` overrides the RAM-based number of parallel build jobs.
 - After an install, `scripts/cleanup_install.sh` reports reclaimable space (pip/conda caches, build intermediates, simulation packages). `--caches`, `--builds` and `--simulation` remove them, keeping everything needed at runtime and for building indices.
@@ -97,7 +98,7 @@ scripts/run_gridion.sh -t mm -d X1 -n hxb2_mm_run1 [--dry-run] [-s sites/dev.env
 
 To prepare a fresh GridION, run `scripts/prep_gridion.sh` first. With no options it only reports: it records the ONT/MinKNOW/NVIDIA package versions, shows cores/RAM/disk/cmake, the dorado version and socket access, and the unattended-upgrades origins, and dry-runs the apt build prerequisites, flagging any ont-*/MinKNOW/NVIDIA/kernel package apt would touch. `--install` installs the prerequisites only if that dry run is clean, `--hold` runs `apt-mark hold` on the ONT/NVIDIA packages, and `--env <name>` creates the conda env from `env.yml`. Never run `apt upgrade` there: MinKNOW, the dorado server and the GPU driver are apt packages, and a dorado server update breaks the pinned client.
 
-`-t` is one of `mm mg mg_local sp sg rh rb cl`. The script works through these steps:
+`-t` is one of `mm mg mg_local sp sg rh rb cl cn`. The script works through these steps:
 1. Renders the site's configs.
 2. Creates `runs/<timestamp>_<tool>_<device>/` (gitignored). It holds the config used, `run_info.txt` (commit, readfish version), the readfish logs, and the chunk-log TSV that readfish writes to the current working directory.
 3. For `mg` (metagraphRF), starts `metagraph server_query -i $MG_GRAPH -a $MG_ANNO --port $MG_SERVER_PORT` on 127.0.0.1, unless a server is already listening. It stops the server again on exit.
@@ -126,7 +127,7 @@ metagraphRF (`ratschlab/metagraphRF`) is a pure-Python readfish plugin. `backend
 
 readfish writes per-read decisions to `test_run_readfish.tsv` in the current working directory.
 
-Config naming: `rf_<tool>_<dataset>.toml` (`mm`=mappy_rs, `cl`=collinearity, `mg`=metagraph, `sp`=spumoni, `sg`=sigmoni, `rh`=rawhash, `rb`=readbouncer). Each config has `[caller_settings.dorado]` (basecaller model and socket), `[mapper_settings.<plugin>]` (index paths are absolute and must be edited per machine) and `[[regions]]` decision rules.
+Config naming: `rf_<tool>_<dataset>.toml` (`mm`=mappy_rs, `cl`=collinearity, `mg`=metagraph, `sp`=spumoni, `sg`=sigmoni, `rh`=rawhash, `rb`=readbouncer, `cn`=cumin). Each config has `[caller_settings.dorado]` (basecaller model and socket), `[mapper_settings.<plugin>]` (index paths are absolute and must be edited per machine) and `[[regions]]` decision rules.
 
 ## Ad-hoc utilities
 
