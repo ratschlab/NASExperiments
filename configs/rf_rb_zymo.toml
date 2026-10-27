@@ -6,6 +6,8 @@ address = "ipc:///var/lib/minknow/data/.dorado/dorado-basecall-server.sock"
 # Update the following path
 target_files = "/scratch/NASExperiments/tmp/Refs1.ibf" 
 threads = 16
+kmer_size = 17
+exp_seq_error_rate = 0.05
 
 [[regions]]
 name = "analysis"
