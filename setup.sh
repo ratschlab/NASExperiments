@@ -115,7 +115,8 @@ BOOST_DIR=$(find /usr/lib/*/cmake -maxdepth 1 -type d -iname 'Boost-*' -print -q
 BOOST_IOSTREAMS_DIR=$(find /usr/lib/*/cmake -maxdepth 1 -type d -iname 'boost_iostreams-*' -print -quit 2>/dev/null || true)
 if [ -z "$BOOST_DIR" ] || [ -z "$BOOST_IOSTREAMS_DIR" ]; then
   echo "metagraph: system Boost (static libs) not found, trying to install libboost-all-dev..."
-  if sudo -n true 2>/dev/null; then
+  # NO_SUDO=1 skips the install attempt; the timeout guards against sudo hanging
+  if [ "${NO_SUDO:-0}" != 1 ] && timeout 5 sudo -n true 2>/dev/null; then
     sudo apt-get update && sudo apt-get install -y libboost-all-dev
   elif [ "$(id -u)" = "0" ]; then
     apt-get update && apt-get install -y libboost-all-dev
