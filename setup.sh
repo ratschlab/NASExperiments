@@ -52,13 +52,13 @@ TURBOPFOR_DIR=$EXPDIR/code/TurboPFor-Integer-Compression
 step "collinearity"
 # setup collinearity
 cd $EXPDIR/code
-if ! pip show collinearity &>/dev/null || [ ! -f collinearity/build/Collinearity ]; then
+if ! pip show pycollinearity &>/dev/null || [ ! -f collinearity/build/Collinearity ]; then
     [ -d collinearity ] || git clone --recursive https://github.com/ratschlab/collinearity.git
     cd collinearity
     # patch hardcoded TurboPFor path in CMakeLists.txt
     sed -i "s|/home/sayan/Downloads/TurboPFor-Integer-Compression|${TURBOPFOR_DIR}|g" CMakeLists.txt
     # for python bindings
-    pip show collinearity &>/dev/null || pip install .
+    pip show pycollinearity &>/dev/null || pip install .
     # to build from source
     if [ ! -f build/Collinearity ]; then
         mkdir -p build && cd build
@@ -177,7 +177,7 @@ if [ ! -f spumoni/build/spumoni ]; then
     cd ..
 fi
 # python bindings
-if ! pip show spumoni &>/dev/null; then
+if ! pip show pyspumoni &>/dev/null; then
     cd $EXPDIR/code/spumoni
     pip install .
 else
@@ -196,7 +196,7 @@ if [ ! -f rawhash2/rawhash2 ]; then
     make -j $JOBS
     # for python bindings
     cd ..
-    pip show rawhash2 &>/dev/null || pip install .
+    pip show pyrawhash2 &>/dev/null || pip install .
 else
     echo "rawhash2 binary found, skipping."
 fi
@@ -224,6 +224,19 @@ cd sigmoni
 pip install "setuptools<81" uncalled4   # ont_fast5_api needs pkg_resources
 # editable: sigmoni loads its pore models from <source>/poremodel/
 pip install -e .
+
+step "cumin"
+# setup cumin (open-syncmer-based)
+cd $EXPDIR/code
+[ -d cumin ] || git clone --recursive https://github.com/sayangoswami/cumin.git
+cd cumin
+git submodule update --init --recursive
+mkdir -p build && cd build
+cmake ..
+make -j $JOBS
+# for python bindings
+cd $EXPDIR/code/cumin
+pip show pycumin &>/dev/null || pip install .
 
 step "seq2squiggle"
 # setup seq2squiggle (signal simulation only, not needed for live runs on a GridION;
