@@ -167,7 +167,7 @@ cd $EXPDIR/code
 cd metagraphRF
 if [ "$(git branch --show-current)" != "$METAGRAPHRF_BRANCH" ]; then
     echo "WARNING: code/metagraphRF is on '$(git branch --show-current)', not $METAGRAPHRF_BRANCH;" >&2
-    echo "         the mg templates need that branch (mode = query | map | align)." >&2
+    echo "         the mg_query/mg_map templates need that branch (mode = query | map)." >&2
 fi
 if ! python -c "from metagraphRF import MODE_SETTINGS" &>/dev/null; then
     pip install --no-deps .

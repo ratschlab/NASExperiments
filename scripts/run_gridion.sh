@@ -19,7 +19,7 @@
 #
 set -euo pipefail
 
-TOOLS="mm mg mg_query mg_map sp sg rh rb cl cn"
+TOOLS="mm mg_query mg_map sp sg rh rb cl cn"
 
 usage() {
     echo "Usage: $0 -t <tool>[,<tool>...] -d <device> -n <experiment_name> [options] [-- <readfish args>]"
@@ -39,7 +39,7 @@ usage() {
     echo ""
     echo "Example:"
     echo "  $0 -t mm -d X1 -n hxb2_mm_run1"
-    echo "  $0 -t mm,mg_query,mg,sp,rb,cl,rh -d X1 -n hxb2_arms_run1 --dry-run"
+    echo "  $0 -t mm,mg_query,mg_map,sp,rb,cl,rh -d X1 -n hxb2_arms_run1 --dry-run"
     exit 1
 }
 
