@@ -9,7 +9,7 @@
 # runs/<timestamp>_<tool>_<device>/ that collects the config, logs and the
 # readfish chunk log. Expects the selectiveseq conda env to be active.
 #
-# With several tools (-t mm,mg_local,sp), they run side by side on one flow
+# With several tools (-t mm,mg_query,sp), they run side by side on one flow
 # cell: scripts/render_arms.py combines their configs into one with a region
 # per tool plus the control region, interleaved over the channels
 # (channel c runs region (c - 1) % N), each tool in its own readfish worker
@@ -19,7 +19,7 @@
 #
 set -euo pipefail
 
-TOOLS="mm mg mg_local mg_map sp sg rh rb cl cn"
+TOOLS="mm mg mg_query mg_map sp sg rh rb cl cn"
 
 usage() {
     echo "Usage: $0 -t <tool>[,<tool>...] -d <device> -n <experiment_name> [options] [-- <readfish args>]"
@@ -39,7 +39,7 @@ usage() {
     echo ""
     echo "Example:"
     echo "  $0 -t mm -d X1 -n hxb2_mm_run1"
-    echo "  $0 -t mm,mg_local,mg,sp,rb,cl,rh -d X1 -n hxb2_arms_run1 --dry-run"
+    echo "  $0 -t mm,mg_query,mg,sp,rb,cl,rh -d X1 -n hxb2_arms_run1 --dry-run"
     exit 1
 }
 
