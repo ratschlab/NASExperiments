@@ -27,7 +27,7 @@ echo "env: ${CONDA_DEFAULT_ENV:-none} (${CONDA_PREFIX:-no prefix})"
 echo "python: $(python --version 2>&1)   $(command -v python)"
 
 section "Tool checkouts (code/)"
-for d in minimap2 TurboPFor-Integer-Compression collinearity metagraph metagraphRF spumoni rawhash2 cumin \
+for d in readfish minimap2 TurboPFor-Integer-Compression collinearity metagraph metagraphRF spumoni rawhash2 cumin \
          ReadBouncer sigmoni seq2squiggle MinknoApiSimulator; do
     if [ -d "$CODE/$d/.git" ] || [ -f "$CODE/$d/.git" ]; then
         g="git -C $CODE/$d -c submodule.recurse=false"
@@ -65,6 +65,8 @@ for m in readfish.plugins.mappy_rs metagraphRF pymetagraph pyspumoni sigmoni pyr
         printf '%-28s FAILED: %s\n' "$m" "$(tail -1 <<< "$r")"
     fi
 done
+python -c "import readfish._arms" 2>/dev/null \
+    && echo "readfish has parallel regions: yes" || echo "readfish has parallel regions: NO"
 python -c "import pymetagraph; pymetagraph.AnnotatedGraph.align" 2>/dev/null \
     && echo "pymetagraph has AnnotatedGraph.align: yes" || echo "pymetagraph has AnnotatedGraph.align: NO"
 python -c "from metagraphRF import MODE_SETTINGS" 2>/dev/null \

@@ -69,6 +69,24 @@ else
     echo "collinearity already installed, skipping."
 fi
 
+step "readfish"
+# readfish from the ratschlab fork: upstream 2026.1.0 plus regions with their own
+# caller/aligner in parallel worker processes (readfish._arms); replaces the
+# PyPI readfish 2024.3.0 that env.yml installs
+READFISH_BRANCH=ak/parallel-arms
+cd $EXPDIR/code
+[ -d readfish ] || git clone -b $READFISH_BRANCH https://github.com/ratschlab/readfish.git
+cd readfish
+if [ "$(git branch --show-current)" != "$READFISH_BRANCH" ]; then
+    echo "WARNING: code/readfish is on '$(git branch --show-current)', not $READFISH_BRANCH;" >&2
+    echo "         run_gridion.sh with several tools needs that branch." >&2
+fi
+if ! python -c "import readfish._arms" &>/dev/null; then
+    pip install ".[all]"
+else
+    echo "readfish with parallel regions found, skipping."
+fi
+
 step "metagraph CLI"
 # build metagraph (CLI for index building + pymetagraph bindings) from the
 # ak/pymetagraph-align branch (master + pymetagraph align/map)
