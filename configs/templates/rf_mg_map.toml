@@ -1,0 +1,11 @@
+[caller_settings.dorado]
+config = "${BASECALL_CONFIG}"
+address = "${BASECALL_ADDRESS}"
+
+# metagraphRF, seed-only label mapping mode (in-process through pymetagraph)
+[mapper_settings.metagraphRF]
+graph = "${INDEX_DIR}/mg/${DATASET}.dbg"
+annotation = "${INDEX_DIR}/mg/${DATASET}.column.annodbg"
+threads = ${THREADS}
+mode = "map"
+min_exact_match = 0.1	# fraction of the read covered by seeds of one label; HXB2 check sample, 1.2 s: 66% of targets kept, 5.4% of other reads (0.3 = mg)

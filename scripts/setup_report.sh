@@ -25,7 +25,6 @@ echo "NASExperiments: $(git -C "$EXPDIR" rev-parse --abbrev-ref HEAD) $(git -C "
 section "Conda env"
 echo "env: ${CONDA_DEFAULT_ENV:-none} (${CONDA_PREFIX:-no prefix})"
 echo "python: $(python --version 2>&1)   $(command -v python)"
-echo "conda metagraph (server backend): $("${CONDA_PREFIX:-/nonexistent}/bin/metagraph" --version 2>/dev/null | head -1 || echo missing)"
 
 section "Tool checkouts (code/)"
 for d in minimap2 TurboPFor-Integer-Compression collinearity metagraph metagraphRF spumoni rawhash2 cumin \
@@ -52,7 +51,7 @@ done
 echo "metagraph (code/): $("$CODE/metagraph/metagraph/build/metagraph" --version 2>/dev/null | head -1 || echo missing)"
 
 section "Python packages"
-for p in readfish ont-pybasecall-client-lib metagraph-api metagraphRF pymetagraph pyspumoni pyrawhash \
+for p in readfish ont-pybasecall-client-lib metagraphRF pymetagraph pyspumoni pyrawhash \
          pyreadbouncer pycollinearity pycumin sigmoni uncalled4 mappy-rs seq2squiggle torch mksim numpy pysam setuptools; do
     printf '%-28s %s\n' "$p" "$(pip show "$p" 2>/dev/null | awk '/^Version:/{print $2}')"
 done | sed 's/ $/ MISSING/'
@@ -66,10 +65,10 @@ for m in readfish.plugins.mappy_rs metagraphRF pymetagraph pyspumoni sigmoni pyr
         printf '%-28s FAILED: %s\n' "$m" "$(tail -1 <<< "$r")"
     fi
 done
-python -c "import pymetagraph; pymetagraph.AnnotatedGraph" 2>/dev/null \
-    && echo "pymetagraph has AnnotatedGraph: yes" || echo "pymetagraph has AnnotatedGraph: NO"
-python -c "from metagraphRF.aligner import Aligner; Aligner._init_local" 2>/dev/null \
-    && echo "metagraphRF has local backend: yes" || echo "metagraphRF has local backend: NO"
+python -c "import pymetagraph; pymetagraph.AnnotatedGraph.align" 2>/dev/null \
+    && echo "pymetagraph has AnnotatedGraph.align: yes" || echo "pymetagraph has AnnotatedGraph.align: NO"
+python -c "from metagraphRF import MODE_SETTINGS" 2>/dev/null \
+    && echo "metagraphRF has pymetagraph modes: yes" || echo "metagraphRF has pymetagraph modes: NO"
 pip check 2>&1 | tail -5
 
 section "Basecaller"

@@ -69,34 +69,17 @@ else
     echo "collinearity already installed, skipping."
 fi
 
-step "metagraphRF"
-# setup metagraphRF: readfish plugin with a server backend (a `metagraph server_query`
-# from conda metagraph 0.5.1) and a local backend (in-process pymetagraph, built below)
-cd $EXPDIR/code
-[ -x "$CONDA_PREFIX/bin/metagraph" ] \
-    || conda install -y -c bioconda -c conda-forge metagraph=0.5.1
-[ -d metagraphRF ] || git clone -b ak/local-backend https://github.com/ratschlab/metagraphRF
-cd metagraphRF
-if [ "$(git branch --show-current)" != "ak/local-backend" ]; then
-    echo "WARNING: code/metagraphRF is on '$(git branch --show-current)', not ak/local-backend;" >&2
-    echo "         backend = \"local\" needs that branch." >&2
-fi
-if ! python -c "from metagraphRF.aligner import Aligner; Aligner._init_local" &>/dev/null; then
-    pip install .
-else
-    echo "metagraphRF with local backend found, skipping."
-fi
-
 step "metagraph CLI"
 # build metagraph (CLI for index building + pymetagraph bindings) from the
-# ak/pymetagraph-query branch (master + query-only pymetagraph)
+# ak/pymetagraph-align branch (master + pymetagraph align/map)
 # From https://metagraph.ethz.ch/static/docs/installation.html#install-from-source
+METAGRAPH_BRANCH=ak/pymetagraph-align
 cd $EXPDIR/code
-[ -d metagraph ] || git clone -b ak/pymetagraph-query --recursive https://github.com/ratschlab/metagraph.git
+[ -d metagraph ] || git clone -b $METAGRAPH_BRANCH --recursive https://github.com/ratschlab/metagraph.git
 cd metagraph
-if [ "$(git branch --show-current)" != "ak/pymetagraph-query" ]; then
-    echo "WARNING: code/metagraph is on '$(git branch --show-current)', not ak/pymetagraph-query;" >&2
-    echo "         pymetagraph needs that branch (git -C code/metagraph checkout ak/pymetagraph-query)." >&2
+if [ "$(git branch --show-current)" != "$METAGRAPH_BRANCH" ]; then
+    echo "WARNING: code/metagraph is on '$(git branch --show-current)', not $METAGRAPH_BRANCH;" >&2
+    echo "         pymetagraph needs that branch (git -C code/metagraph checkout $METAGRAPH_BRANCH)." >&2
 fi
 git submodule update --init --recursive
 
@@ -139,11 +122,11 @@ else
 fi
 
 step "pymetagraph"
-# pymetagraph python bindings (in-process label queries, used by metagraphRF's
-# local backend). Separate cmake invocation via scikit-build-core with
+# pymetagraph python bindings (in-process queries and alignment, used by
+# metagraphRF). Separate cmake invocation via scikit-build-core with
 # -DBUILD_PYTHON_BINDINGS=ON, which switches metagraph's CMakeLists.txt to shared
-# Boost libs. Reinstalled if an older pymetagraph (no AnnotatedGraph) is present.
-if ! python -c "import pymetagraph; pymetagraph.AnnotatedGraph" &>/dev/null; then
+# Boost libs. Reinstalled if an older pymetagraph (no AnnotatedGraph.align) is present.
+if ! python -c "import pymetagraph; pymetagraph.AnnotatedGraph.align" &>/dev/null; then
     cd $EXPDIR/code/metagraph/metagraph/api/python/pymetagraph
     # a failed earlier attempt leaves a CMake cache pointing at pip's deleted build env
     rm -rf build
@@ -155,6 +138,23 @@ if ! python -c "import pymetagraph; pymetagraph.AnnotatedGraph" &>/dev/null; the
     fi
 else
     echo "pymetagraph already installed, skipping."
+fi
+
+step "metagraphRF"
+# setup metagraphRF: readfish plugin running MetaGraph in-process through pymetagraph
+# (built above, hence --no-deps); reinstalled over the older server/local-backend version
+METAGRAPHRF_BRANCH=ak/pymetagraph-only
+cd $EXPDIR/code
+[ -d metagraphRF ] || git clone -b $METAGRAPHRF_BRANCH https://github.com/ratschlab/metagraphRF
+cd metagraphRF
+if [ "$(git branch --show-current)" != "$METAGRAPHRF_BRANCH" ]; then
+    echo "WARNING: code/metagraphRF is on '$(git branch --show-current)', not $METAGRAPHRF_BRANCH;" >&2
+    echo "         the mg templates need that branch (mode = query | map | align)." >&2
+fi
+if ! python -c "from metagraphRF import MODE_SETTINGS" &>/dev/null; then
+    pip install --no-deps .
+else
+    echo "metagraphRF with pymetagraph modes found, skipping."
 fi
 
 step "spumoni"
@@ -229,15 +229,21 @@ pip install -e .
 step "cumin"
 # setup cumin (open-syncmer-based)
 cd $EXPDIR/code
-[ -d cumin ] || git clone --recursive https://github.com/sayangoswami/cumin.git
-cd cumin
-git submodule update --init --recursive
-mkdir -p build && cd build
-cmake ..
-make -j $JOBS
-# for python bindings
-cd $EXPDIR/code/cumin
-pip show pycumin &>/dev/null || pip install .
+if ! pip show pycumin &>/dev/null || [ ! -f cumin/build/cumin ]; then
+    [ -d cumin ] || git clone --recursive https://github.com/sayangoswami/cumin.git
+    cd cumin
+    git submodule update --init --recursive
+    if [ ! -f build/cumin ]; then
+        mkdir -p build && cd build
+        cmake ..
+        make -j $JOBS
+        cd ..
+    fi
+    # for python bindings
+    pip show pycumin &>/dev/null || pip install .
+else
+    echo "cumin already installed, skipping."
+fi
 
 step "seq2squiggle"
 # setup seq2squiggle (signal simulation only, not needed for live runs on a GridION;

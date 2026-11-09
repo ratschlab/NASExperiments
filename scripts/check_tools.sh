@@ -7,9 +7,8 @@
 # For each tool, using its rendered config from scripts/render_configs.sh:
 #   1. plugin   the readfish plugin module imports
 #   2. index    every absolute path in [mapper_settings] exists (as a file,
-#               directory or prefix of files); for mg also MG_GRAPH/MG_ANNO
+#               directory or prefix of files)
 #   3. validate `readfish validate` initialises caller and aligner
-#               (starts a metagraph server for mg if none is listening)
 #   4. map      with --sample: benchmark_aligner.py runs the plugin on the
 #               given BLOW5 file(s), truncated to the readfish decision
 #               window, and reports how many target reads are kept and how
@@ -20,7 +19,7 @@
 #
 set -uo pipefail
 
-ALL_TOOLS="mm mg mg_local sp sg rh rb cl cn"
+ALL_TOOLS="mm mg mg_local mg_map sp sg rh rb cl cn"
 # tools that work on raw signal and need no basecalling for step 4
 RAW_TOOLS="rh sg"
 
@@ -84,8 +83,6 @@ set -a
 source "$EXPERIMENT_FILE"
 source "$SITE_FILE"
 set +a
-source "$SCRIPTDIR/gridion_common.sh"
-trap mg_server_stop EXIT
 
 LOGS=$EXPDIR/runs/check_$(date +"%Y%m%d_%H%M%S")
 mkdir -p "$LOGS"
@@ -115,7 +112,6 @@ check_tool() {
     # 2. index
     local paths
     paths=$(python -I "$SCRIPTDIR/mapper_settings.py" "$toml" paths)
-    [ "$tool" = "mg" ] && paths+=$'\n'"$MG_GRAPH"$'\n'"$MG_ANNO"
     while read -r p; do
         [ -z "$p" ] || path_exists "$p" || missing+=("$p")
     done <<< "$paths"
@@ -126,9 +122,6 @@ check_tool() {
     RESULT[$tool,index]="ok"
 
     # 3. validate
-    if [ "$tool" = "mg" ] && ! mg_server_start "$log.metagraph_server.log"; then
-        RESULT[$tool,validate]="FAIL"; return
-    fi
     if ! (cd "$LOGS" && timeout 300 readfish validate "$toml" --log-file "$log.validate.log" > /dev/null 2>&1); then
         RESULT[$tool,validate]="FAIL"; return
     fi
@@ -167,7 +160,6 @@ print(f\"kept {n['1', '1']}/{tgt} ejected {n['0', '0']}/{oth}\")")
 for tool in "${TOOLS[@]}"; do
     echo "--- Checking $tool ---"
     check_tool "$tool"
-    [ "$tool" = "mg" ] && mg_server_stop
 done
 
 # --- Summary ---

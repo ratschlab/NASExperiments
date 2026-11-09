@@ -56,6 +56,7 @@ BUILD_DIRS=(
     "spumoni/build/_deps"
     "rawhash2/build"
     "ReadBouncer/build:main/ReadBouncer"
+    "cumin/build:cumin"
 )
 # leftovers from earlier builds (build.<something>)
 for d in "$CODE"/*/build.* "$CODE"/metagraph/metagraph/build.*; do

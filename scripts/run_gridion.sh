@@ -5,14 +5,13 @@
 #   scripts/run_gridion.sh -t <tool> -d <device> -n <experiment_name> [-s <site.env>] [-e <experiment.env>] [options] [-- <readfish args>]
 #
 # Renders the configs for the site (scripts/render_configs.sh), validates the
-# chosen one, starts a metagraph server for metagraphRF if none is listening,
-# and runs `readfish targets` from a fresh run directory
+# chosen one, and runs `readfish targets` from a fresh run directory
 # runs/<timestamp>_<tool>_<device>/ that collects the config, logs and the
 # readfish chunk log. Expects the selectiveseq conda env to be active.
 #
 set -euo pipefail
 
-TOOLS="mm mg mg_local sp sg rh rb cl cn"
+TOOLS="mm mg mg_local mg_map sp sg rh rb cl cn"
 
 usage() {
     echo "Usage: $0 -t <tool> -d <device> -n <experiment_name> [options] [-- <readfish args>]"
@@ -83,13 +82,6 @@ cp "$TOML" "$RUNDIR/"
     echo "readfish $(pip show readfish 2>/dev/null | awk '/^Version/{print $2}')"
 } > "$RUNDIR/run_info.txt"
 echo "Run directory: $RUNDIR"
-
-# --- metagraph server for metagraphRF ---
-source "$SCRIPTDIR/gridion_common.sh"
-trap mg_server_stop EXIT
-if [ "$TOOL" = "mg" ]; then
-    mg_server_start "$RUNDIR/metagraph_server.log"
-fi
 
 # --- Run readfish ---
 cd "$RUNDIR"
