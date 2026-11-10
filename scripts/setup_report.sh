@@ -67,10 +67,10 @@ for m in readfish.plugins.mappy_rs metagraphRF pymetagraph pyspumoni sigmoni pyr
 done
 python -c "import readfish._arms" 2>/dev/null \
     && echo "readfish has parallel regions: yes" || echo "readfish has parallel regions: NO"
-python -c 'import inspect, pymetagraph; assert "max_num_nodes_per_seq_char" in inspect.signature(pymetagraph.AnnotatedGraph.align).parameters' 2>/dev/null \
-    && echo "pymetagraph has the align/map API of #731: yes" || echo "pymetagraph has the align/map API of #731: NO"
-python -c 'from metagraphRF import MODE_SETTINGS; assert "max_num_nodes_per_seq_char" in MODE_SETTINGS["align"]' 2>/dev/null \
-    && echo "metagraphRF matches the pymetagraph API of #731: yes" || echo "metagraphRF matches the pymetagraph API of #731: NO"
+python -c 'import inspect, pymetagraph; assert "min_seed_length" in inspect.signature(pymetagraph.AnnotatedGraph.map).parameters' 2>/dev/null \
+    && echo "pymetagraph has the align/map API of #733: yes" || echo "pymetagraph has the align/map API of #733: NO"
+python -c 'from metagraphRF import MODE_SETTINGS; assert "min_seed_length" in MODE_SETTINGS["map"]' 2>/dev/null \
+    && echo "metagraphRF matches the pymetagraph API of #733: yes" || echo "metagraphRF matches the pymetagraph API of #733: NO"
 pip check 2>&1 | tail -5
 
 section "Basecaller"

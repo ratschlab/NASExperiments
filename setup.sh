@@ -89,16 +89,16 @@ fi
 
 step "metagraph CLI"
 # build metagraph (CLI for index building + pymetagraph bindings) from master
-# (pymetagraph align/map since #731)
+# (pymetagraph align/map since #731, min_seed_length since #733)
 # From https://metagraph.ethz.ch/static/docs/installation.html#install-from-source
 METAGRAPH_BRANCH=master
-# the current pymetagraph API (align takes max_num_nodes_per_seq_char since #731)
-PYMETAGRAPH_OK='import inspect, pymetagraph; assert "max_num_nodes_per_seq_char" in inspect.signature(pymetagraph.AnnotatedGraph.align).parameters'
+# the current pymetagraph API (map takes min_seed_length since #733)
+PYMETAGRAPH_OK='import inspect, pymetagraph; assert "min_seed_length" in inspect.signature(pymetagraph.AnnotatedGraph.map).parameters'
 cd $EXPDIR/code
 [ -d metagraph ] || git clone -b $METAGRAPH_BRANCH --recursive https://github.com/ratschlab/metagraph.git
 cd metagraph
 # move checkouts of the retired pre-merge branch to master, and update master if
-# the installed pymetagraph is older than #731
+# the installed pymetagraph is older than #733
 if [ "$(git branch --show-current)" = ak/pymetagraph-align ]; then
     git fetch origin master && git checkout $METAGRAPH_BRANCH
 fi
@@ -153,7 +153,7 @@ step "pymetagraph"
 # pymetagraph python bindings (in-process queries and alignment, used by
 # metagraphRF). Separate cmake invocation via scikit-build-core with
 # -DBUILD_PYTHON_BINDINGS=ON, which switches metagraph's CMakeLists.txt to shared
-# Boost libs. Reinstalled if an older pymetagraph (before #731) is present.
+# Boost libs. Reinstalled if an older pymetagraph (before #733) is present.
 if ! python -c "$PYMETAGRAPH_OK" &>/dev/null; then
     cd $EXPDIR/code/metagraph/metagraph/api/python/pymetagraph
     # a failed earlier attempt leaves a CMake cache pointing at pip's deleted build env
@@ -179,8 +179,8 @@ if [ "$(git branch --show-current)" != "$METAGRAPHRF_BRANCH" ]; then
     echo "WARNING: code/metagraphRF is on '$(git branch --show-current)', not $METAGRAPHRF_BRANCH;" >&2
     echo "         the mg_query/mg_map templates need that branch (mode = query | map)." >&2
 fi
-# reinstalled (after a pull) if older than the pymetagraph API of #731
-if ! python -c 'from metagraphRF import MODE_SETTINGS; assert "max_num_nodes_per_seq_char" in MODE_SETTINGS["align"]' &>/dev/null; then
+# reinstalled (after a pull) if older than the pymetagraph API of #733
+if ! python -c 'from metagraphRF import MODE_SETTINGS; assert "min_seed_length" in MODE_SETTINGS["map"]' &>/dev/null; then
     [ "$(git branch --show-current)" = "$METAGRAPHRF_BRANCH" ] && git pull --ff-only origin $METAGRAPHRF_BRANCH
     pip install --no-deps .
 else
