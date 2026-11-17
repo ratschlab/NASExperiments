@@ -2,6 +2,9 @@
 
 Host GXB03789, user `grid`, repo `/home/grid/NASExperiments`, conda env `selectiveseq_v2`, position X1.
 HXB2 test library for us only, so all runs are live (readfish unblocks); no dry runs needed.
+MinKNOW's live basecalling is off in all runs: readfish basecalls its chunks itself through the
+dorado server, and without MinKNOW's whole-read basecalls on the same server and GPU, readfish's
+basecalls wait less. Reads are basecalled afterwards from pod5 with sup and `--emit-moves`.
 
 Three runs on one flow cell:
 
@@ -34,6 +37,15 @@ conda activate selectiveseq_v2 && cd /home/grid/NASExperiments
 ```
 Start readfish inside `tmux` so it survives a closed terminal (essential for run 3).
 
+**Before every readfish start, check the dorado server** (MinKNOW manages it; it is not yet
+confirmed that it stays up with live basecalling off):
+```bash
+pgrep -a dorado_basecall            # running, with --port ipc:///home/grid/.dorado/...
+ls -l /home/grid/.dorado/dorado-basecall-server.sock
+```
+If it is not running, readfish gets no basecalls (it hangs at "Initialising Caller"): turn live
+basecalling on for that run and note it.
+
 ## 2. Run 1: bulk FAST5 (~30 min of sequencing)
 
 For `ont_signal_viz` (`ont-inspector`): its bulk FAST5 layer is not written yet and gets built on
@@ -45,8 +57,8 @@ all 512 channels), so it gets its own short run.
 Minutes count from the start of sequencing, i.e. after MinKNOW's initial pore scan.
 
 - [ ] In MinKNOW, start run 1 on X1 with bulk FAST5 output on (output settings; raw signal, all
-  channels), pod5 output and live basecalling as usual. Note flow cell, library and run ID.
-- [ ] Minutes 0–5: readfish not running.
+  channels), pod5 output on, live basecalling off. Note flow cell, library and run ID.
+- [ ] Minutes 0–5: readfish not running. Check the dorado server (above).
 - [ ] Minute 5: mm alone (target/control halves, as in March). Note the clock time.
   ```bash
   scripts/run_gridion.sh -t mm -d X1 -n hxb2_run1_mm
@@ -60,7 +72,8 @@ Minutes count from the start of sequencing, i.e. after MinKNOW's initial pore sc
 
 ## 3. Run 2: multi-tool check (~1 h, no bulk)
 
-- [ ] Start run 2 on the same flow cell, bulk output off, otherwise as run 1.
+- [ ] Start run 2 on the same flow cell, bulk output off, otherwise as run 1 (pod5 on, live
+  basecalling off). Check the dorado server.
 - [ ] Once reads come in:
   ```bash
   scripts/run_gridion.sh -t mm,mg_query,mg_map,rh -d X1 -n hxb2_run2_arms
@@ -70,7 +83,7 @@ Minutes count from the start of sequencing, i.e. after MinKNOW's initial pore sc
     mg_map, rh, control).
   - In `runs/<timestamp>_arms_X1/`, each tool's `*_batches.tsv` grows, and `wait_s` stays well
     below a second (`tail` them).
-  - MinKNOW's live basecalling keeps running, and `top` shows CPU headroom.
+  - The dorado server stays up, and `top` shows CPU headroom.
 - [ ] After ~1 h, stop readfish, end the run, and copy back `runs/` (or send me the arms run
   directories) if anything looks off. If all is fine, go on with run 3.
 
@@ -82,7 +95,8 @@ spatial gradient), and the control region (never unblocked) is the baseline. Per
 compare unblock rate and sequenced yield against when the channel's pores die. This is also the
 long run the inspector's `channel_survival` has been waiting for.
 
-- [ ] Start run 3 on the same flow cell, 72 h, bulk output off. Keep MinKNOW's periodic pore
+- [ ] Start run 3 on the same flow cell, 72 h, bulk output off, pod5 on, live basecalling off.
+  Check the dorado server. Keep MinKNOW's periodic pore
   (mux) scans at their default: they are what pore death is measured from.
 - [ ] In `tmux`:
   ```bash
@@ -102,6 +116,9 @@ long run the inspector's `channel_survival` has been waiting for.
 - [ ] `runs/` entries of the three runs: config, `run_info.txt`, readfish TSVs per tool
   (`*_readfish_<tool>.tsv`), `*_batches.tsv`, logs.
 - [ ] The intervention times of run 3, and the clock times from run 1.
+
+**Afterwards on the dev server:** basecall the pod5s with sup (`dorado basecaller ... --emit-moves`,
+as the inspector asks) and align to `refs/all_refs.fasta` as for March.
 
 **What we look at afterwards:** per tool the wait / basecall / align times per batch, decision
 latency (sequence length and chunks at decision), enrichment of HXB2_IN against the control
