@@ -73,12 +73,15 @@ Minutes count from the start of sequencing, i.e. after MinKNOW's initial pore sc
 
 ## 3. Run 2: multi-tool check (~1 h, no bulk)
 
-- [ ] Before run 2 (readfish stopped): update readfish to show a status line per tool on screen
-  every 10 s (`mm: …`, `mg_query: …`, …, `control: …`; run 1's multi-tool part printed nothing):
+- [ ] Before run 2 (readfish stopped): update readfish. It fixes the lag of run 1's multi-tool
+  part (mm's decisions fell up to 26 s behind) and shows a status line per tool on screen every
+  10 s (`mm: …`, `mg_query: …`, …, `control: …`):
   ```bash
   git pull && ./setup.sh
   ```
-  `setup.sh` pulls `code/readfish` and reinstalls it (about a minute); the rest is skipped.
+  `setup.sh` pulls `code/readfish` and reinstalls it (about a minute). Check: `run_info.txt` of
+  the new run shows `code/readfish ak/parallel-arms 9f370b1` (or later).
+- [ ] While run 2 runs: the `Wait:` in the status lines stays below about 0.5 s for every tool.
 
 - [ ] Start run 2 on the same flow cell, bulk output off, otherwise as run 1 (pod5 on, live
   basecalling off). Check the dorado server.

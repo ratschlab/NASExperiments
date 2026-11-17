@@ -81,8 +81,9 @@ if [ "$(git branch --show-current)" != "$READFISH_BRANCH" ]; then
     echo "WARNING: code/readfish is on '$(git branch --show-current)', not $READFISH_BRANCH;" >&2
     echo "         run_gridion.sh with several tools needs that branch." >&2
 fi
-# reinstalled (after a pull) if older than the per-region status lines on screen
-if ! python -c "from readfish._arms import STATUS_INTERVAL" &>/dev/null; then
+# reinstalled (after a pull) if older than chunks sent on request (no lag of
+# slow regions, 2026-11-17)
+if ! python -c "from readfish._arms import ArmManager; ArmManager._want" &>/dev/null; then
     [ "$(git branch --show-current)" = "$READFISH_BRANCH" ] && git pull --ff-only origin $READFISH_BRANCH
     pip install ".[all]"
 else
