@@ -73,6 +73,13 @@ Minutes count from the start of sequencing, i.e. after MinKNOW's initial pore sc
 
 ## 3. Run 2: multi-tool check (~1 h, no bulk)
 
+- [ ] Before run 2 (readfish stopped): update readfish to show a status line per tool on screen
+  every 10 s (`mm: …`, `mg_query: …`, …, `control: …`; run 1's multi-tool part printed nothing):
+  ```bash
+  git pull && ./setup.sh
+  ```
+  `setup.sh` pulls `code/readfish` and reinstalls it (about a minute); the rest is skipped.
+
 - [ ] Start run 2 on the same flow cell, bulk output off, otherwise as run 1 (pod5 on, live
   basecalling off). Check the dorado server.
 - [ ] Once reads come in:
