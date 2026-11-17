@@ -40,11 +40,12 @@ Start readfish inside `tmux` so it survives a closed terminal (essential for run
 **Before every readfish start, check the dorado server** (MinKNOW manages it; it is not yet
 confirmed that it stays up with live basecalling off):
 ```bash
-pgrep -a dorado_basecall            # running, with --port ipc:///home/grid/.dorado/...
+pgrep -a dorado_basecall            # running, with --port /home/grid/.dorado/dorado-basecall-server.sock
 ls -l /home/grid/.dorado/dorado-basecall-server.sock
 ```
-If it is not running, readfish gets no basecalls (it hangs at "Initialising Caller"): turn live
-basecalling on for that run and note it.
+`run_gridion.sh` takes the address from that `--port` (adding `ipc://`), so a different path is
+fine. If it is not running, readfish gets no basecalls (it hangs at "Initialising Caller"): turn
+live basecalling on for that run and note it.
 
 ## 2. Run 1: bulk FAST5 (~30 min of sequencing)
 
