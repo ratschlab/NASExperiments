@@ -7,3 +7,7 @@ ref = "${INDEX_DIR}/sp/${DATASET}"
 threads = ${THREADS}
 PML = true
 minimizer_alphabet = true
+# values per experiment (experiments/*.env); windows must match the index
+small_window = ${SP_K}
+large_window = ${SP_W}
+window = ${SP_WINDOW}

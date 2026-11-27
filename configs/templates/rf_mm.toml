@@ -6,3 +6,6 @@ address = "${BASECALL_ADDRESS}"
 fn_idx_in = "${INDEX_DIR}/mm/${DATASET}.mmi"
 n_threads = ${THREADS}
 best_n = 1
+# values per experiment (experiments/*.env)
+min_chain_score = ${MM_MIN_CHAIN_SCORE}
+min_cnt = ${MM_MIN_CNT}

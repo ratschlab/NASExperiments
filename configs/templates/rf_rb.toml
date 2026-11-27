@@ -4,6 +4,9 @@ address = "${BASECALL_ADDRESS}"
 
 [mapper_settings.pyreadbouncer]
 target_files = "${RB_IBF}"
-kmer_size = 17
-exp_seq_error_rate = 0.05
+# values per experiment (experiments/*.env); kmer_size must match the index
+# plugin reads error_rate, not exp_seq_error_rate (was ignored)
+kmer_size = ${RB_KMER_SIZE}
+error_rate = ${RB_ERROR_RATE}
+chunk_length = ${RB_CHUNK_LENGTH}
 threads = ${THREADS}

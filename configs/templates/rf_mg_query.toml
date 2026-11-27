@@ -9,4 +9,5 @@ annotation = "${INDEX_DIR}/mg/${DATASET}.column.annodbg"
 threads = ${THREADS}
 mode = "query"
 num_top_labels = 1
-discovery_fraction = 0.03	# HXB2 check sample, 1.2 s: 60% of targets kept, 4.6% of other reads
+# value per experiment (experiments/*.env)
+discovery_fraction = ${MG_DISCOVERY_FRACTION}

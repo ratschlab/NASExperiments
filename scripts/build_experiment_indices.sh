@@ -6,6 +6,8 @@
 #   EXPERIMENT=experiments/hxb2.env [SITE=sites/dev.env] scripts/task_runner.sh -t build_experiment_indices [1-8]
 #
 
+# index settings come from the experiment file; unset = previous values
+
 # --- List of all tasks to run by default ---
 export ALL_TASKS="1-8"
 
@@ -31,31 +33,36 @@ export REF=$OUTDIR/ref/$(basename $REF)
 
 f1() {
     build_start cl "Building Collinearity index for $DATASET.."
+    # k from experiment file (k >= 16 segfaults on HXB2_IN); --sparse dropped, not a flag of this build
     measure Collinearity \
     --ref $REF \
     --idx $OUTDIR/cl/$DATASET \
-    --bw 1024 --sparse --n_threads $NUM_THREADS
+    -k ${CL_K:-15} --bw 1024 --n_threads $NUM_THREADS
 }
 
 f2() {
     build_start sp "Building Spumoni index for $DATASET.."
-    measure spumoni build -r $REF -M -P -m -o $OUTDIR/sp/$DATASET
+    # minimizer windows from experiment file
+    measure spumoni build -r $REF -M -P -m -K ${SP_K:-4} -W ${SP_W:-11} -o $OUTDIR/sp/$DATASET
 }
 
 f3() {
     build_start mg "Building Metagraph index for $DATASET.."
-    measure metagraph build --mode canonical -v -p $NUM_THREADS -k 19 -o $OUTDIR/mg/$DATASET $REF
+    # k from experiment file
+    measure metagraph build --mode canonical -v -p $NUM_THREADS -k ${MG_K:-19} -o $OUTDIR/mg/$DATASET $REF
     measure metagraph annotate -v -p $NUM_THREADS -i $OUTDIR/mg/$DATASET.dbg --anno-header -o $OUTDIR/mg/$DATASET $REF
 }
 
 f4() {
     build_start mm "Building Minimap2 index for $DATASET.."
-    measure minimap2 -t $NUM_THREADS -x map-ont -d $OUTDIR/mm/$DATASET.mmi $REF
+    # k/w from experiment file
+    measure minimap2 -t $NUM_THREADS -x map-ont -k ${MM_K:-15} -w ${MM_W:-10} -d $OUTDIR/mm/$DATASET.mmi $REF
 }
 
 f5() {
     build_start rb "Building readBouncer index for $DATASET.."
-    build_readbouncer_index 17
+    # k-mer size from experiment file
+    build_readbouncer_index ${RB_KMER_SIZE:-17}
 }
 
 f6() {
@@ -74,5 +81,7 @@ f7() {
 
 f8() {
     build_start cn "Building Cumin index for $DATASET.."
-    measure cumin build --ref $REF --idx $OUTDIR/cn/$DATASET.idx
+    # index settings from experiment file
+    measure cumin build --ref $REF --idx $OUTDIR/cn/$DATASET.idx \
+        --k ${CN_K:-15} --s ${CN_S:-8} --downsample ${CN_DOWNSAMPLE:-2} --win ${CN_WIN:-4000} --overlap ${CN_OVERLAP:-2}
 }

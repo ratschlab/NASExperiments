@@ -5,3 +5,5 @@ address = "${BASECALL_ADDRESS}"
 [mapper_settings.pycumin]
 input = "${INDEX_DIR}/cn/${DATASET}.idx"
 n_threads = ${THREADS}
+# value per experiment (experiments/*.env)
+threshold = ${CN_THRESHOLD}
